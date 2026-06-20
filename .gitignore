@@ -1,0 +1,71 @@
+# 파이썬 데이터 분석 프로젝트 표준 .gitignore
+
+# 1. 파이썬 컴파일 및 캐시 파일
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# 2. 가상환경 (Virtual Environments)
+# uv 가상환경(.venv) 포함
+.venv/
+venv/
+ENV/
+env/
+
+# 3. 환경 설정 및 민감한 정보 (API Key, 패스워드 등)
+.env
+.env.local
+.env.*.local
+.secret
+secrets.json
+
+# 4. Jupyter Notebook 관련 파일
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+.ipython/
+workspace.xml
+
+# 5. 데이터 파일 및 대용량 파일 (Git 관리에서 제외)
+# 데이터 분석용 원본/가공 데이터는 일반적으로 Git에 올리지 않고 별도 저장소나 dvc 등을 활용합니다.
+data/
+datasets/
+raw_data/
+*.csv
+*.xlsx
+*.xls
+*.tsv
+*.parquet
+*.pkl
+*.pickle
+*.h5
+*.npy
+*.npz
+*.db
+*.sqlite3
+
+# 6. 대용량 압축 파일
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# 7. IDE 및 에디터 설정
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# 8. 로그 및 임시 파일
+*.log
+.matplotlib/
+.cache/
+tmp/
+temp/
+.agents/
+
