@@ -1,16 +1,17 @@
 """
-YES24 종합 베스트셀러 도서 목록을 수집하여 CSV 파일로 저장하는 스크래핑 모듈입니다.
+YES24 종합 베스트셀러 도서 목록을 봇 차단 우회 기법을 적용하여 전체 수집하고 CSV 파일로 저장하는 스크래핑 모듈입니다.
 
 주요 기능:
-- 베스트셀러 전체 페이지(최대 5페이지)를 순회하며 책 정보 수집
+- 봇 차단 방지: requests.Session 활용, 브라우저 헤더 보강, 랜덤 대기 시간(1.5초~3.5초) 적용
+- 동적 페이지 감시: 수집할 데이터가 없는 빈 페이지를 감지하면 자동으로 루프를 종료
 - 수집 컬럼: 순위, 상품ID, 도서명, 상세링크, 저자, 출판사, 출판일, 할인율, 판매가, 정가, 판매지수, 평점, 리뷰수
-- 데이터 정제: 콤마 제거 및 숫자 형변환 처리
-- 최종 수집 데이터를 Pandas DataFrame으로 변환 후 CSV 파일로 저장
+- 데이터 정제 및 CSV 파일(utf-8-sig) 저장
 """
 
 import os
 import re
 import time
+import random
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -35,20 +36,25 @@ def clean_float(text):
 
 def scrape_yes24_bestsellers():
     """
-    YES24 베스트셀러 목록을 수집하고 CSV로 저장하는 메인 함수입니다.
+    봇 차단 방지 및 자동 종료 조건을 적용하여 YES24 베스트셀러 전체 데이터를 수집하는 메인 함수입니다.
     """
     url = "https://www.yes24.com/Product/Category/BestSeller"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+    
+    # 봇 차단을 우회하기 위해 HTTP 세션 객체를 생성하고 실감나는 브라우저 헤더를 세팅합니다.
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": "https://www.yes24.com/",
+        "Connection": "keep-alive"
+    })
     
     collected_data = []
+    page = 1
     
-    # 베스트셀러는 일반적으로 최대 5페이지까지 제공됩니다.
-    max_pages = 5
-    
-    for page in range(1, max_pages + 1):
-        print(f"[정보] {page} 페이지 수집 중...")
+    while True:
+        print(f"[정보] {page} 페이지 수집 시도 중...")
         params = {
             "categoryNumber": "001",
             "pageNumber": page,
@@ -56,9 +62,9 @@ def scrape_yes24_bestsellers():
         }
         
         try:
-            res = requests.get(url, params=params, headers=headers)
+            res = session.get(url, params=params, timeout=10)
             if res.status_code != 200:
-                print(f"[경고] {page} 페이지를 가져오지 못했습니다. 상태 코드: {res.status_code}")
+                print(f"[경고] {page} 페이지 호출 실패 (상태 코드: {res.status_code}). 수집을 중단합니다.")
                 break
                 
             soup = BeautifulSoup(res.text, "lxml")
@@ -66,10 +72,13 @@ def scrape_yes24_bestsellers():
             if not items:
                 items = soup.select("ul.ycg_list > li")
                 
+            # 만약 수집된 책 아이템 목록이 비어있다면 마지막 페이지로 간주하고 루프를 종료합니다.
             if not items:
-                print(f"[정보] {page} 페이지에 도서 데이터가 없습니다. 수집을 종료합니다.")
+                print(f"[정보] 더 이상 수집할 데이터가 없습니다. {page - 1} 페이지에서 완료 처리합니다.")
                 break
                 
+            print(f"[정보] {page} 페이지에서 {len(items)}개의 도서 정보를 감지했습니다.")
+            
             for item in items:
                 # 1. 순위
                 rank_elem = item.select_one("em.ico.rank")
@@ -140,11 +149,13 @@ def scrape_yes24_bestsellers():
                     "리뷰수": review_count
                 })
             
-            # 다음 페이지 요청 전 매너 딜레이 (1초)
-            time.sleep(1.0)
+            # 다음 페이지 요청 전, 인간의 행동 패턴처럼 1.5초에서 3.5초 사이의 랜덤한 지연 시간을 설정합니다.
+            delay = random.uniform(1.5, 3.5)
+            time.sleep(delay)
+            page += 1
             
         except Exception as e:
-            print(f"[에러] {page} 페이지 수집 중 에러 발생: {e}")
+            print(f"[에러] {page} 페이지 수집 중 오류 발생: {e}. 현 시점까지 수집된 데이터를 저장합니다.")
             break
             
     if collected_data:
@@ -156,12 +167,12 @@ def scrape_yes24_bestsellers():
         os.makedirs(output_dir, exist_ok=True)
         
         output_path = os.path.join(output_dir, "yes24_bestsellers.csv")
-        # 엑셀 깨짐을 방지하기 위해 utf-8-sig 인코딩으로 저장
+        # 엑셀 자가 깨짐 방지를 위해 utf-8-sig 인코딩 적용
         df.to_csv(output_path, index=False, encoding="utf-8-sig")
-        print(f"[성공] 총 {len(df)}개의 도서 정보를 성공적으로 수집하여 저장했습니다: {output_path}")
+        print(f"[성공] 총 {len(df)}개의 도서 정보를 수집 완료하여 저장했습니다: {output_path}")
         return output_path
     else:
-        print("[경고] 수집된 데이터가 없습니다.")
+        print("[경고] 수집된 데이터가 전혀 없습니다.")
         return None
 
 if __name__ == "__main__":

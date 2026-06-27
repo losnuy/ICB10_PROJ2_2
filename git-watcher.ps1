@@ -1,6 +1,6 @@
-﻿# git-watcher.ps1
+# git-watcher.ps1
 
-# ?뚯씪 蹂寃쎌쓣 ?ㅼ떆媛꾩쑝濡?媛먯??섏뿬 ?먮룞?쇰줈 Git add, commit, push瑜??섑뻾?섎뒗 ?ㅽ겕由쏀듃?낅땲??
+# 파일 변경을 실시간으로 감지하여 자동으로 Git add, commit, push를 수행하는 스크립트입니다.
 
 param(
     [switch]$StartBackground,
@@ -8,48 +8,44 @@ param(
     [switch]$Status
 )
 
-# ?ㅽ겕由쏀듃 ?묒뾽 寃쎈줈 吏??
+# 스크립트 작업 경로 지정
 $workDir = $PSScriptRoot
 
 if (-not $workDir) { $workDir = Get-Location }
 
-# ?곹깭 ?뺤씤 湲곕뒫
-
+# 상태 확인 기능
 if ($Status) {
     $job = Get-Job -Name "git-watcher-job" -ErrorAction SilentlyContinue
     if ($job -and $job.State -eq "Running") {
-        Write-Host "git-watcher is running as a PowerShell Job."
+        Write-Host "git-watcher가 PowerShell Job으로 실행 중입니다."
         exit 0
     }
-    Write-Host "git-watcher is not running."
+    Write-Host "git-watcher가 실행 중이 아닙니다."
     exit 0
 }
 
-# 諛깃렇?쇱슫??媛먯떆??醫낅즺 湲곕뒫
-
+# 백그라운드 감시자 종료 기능
 if ($StopBackground) {
     $job = Get-Job -Name "git-watcher-job" -ErrorAction SilentlyContinue
     if ($job) {
         Stop-Job $job
         Remove-Job $job
-        Write-Host "git-watcher Job stopped."
+        Write-Host "git-watcher Job이 중단되었습니다."
     } else {
-        Write-Host "No active git-watcher Job found."
+        Write-Host "실행 중인 git-watcher Job을 찾을 수 없습니다."
     }
     exit 0
 }
 
-# 諛깃렇?쇱슫???ㅽ뻾 湲곕뒫
-
+# 백그라운드 실행 기능
 if ($StartBackground) {
     $job = Get-Job -Name "git-watcher-job" -ErrorAction SilentlyContinue
     if ($job -and $job.State -eq "Running") {
-        Write-Host "git-watcher is already running."
+        Write-Host "git-watcher가 이미 실행 중입니다."
         exit 0
     }
     
-    # Start-Job???쒖슜?섏뿬 諛깃렇?쇱슫???묒뾽 ?쒖옉
-    
+    # Start-Job을 사용하여 백그라운드 작업 시작
     $scriptPath = $MyInvocation.MyCommand.Path
     Start-Job -ScriptBlock {
         param($path, $script)
@@ -57,19 +53,17 @@ if ($StartBackground) {
         . $script
     } -ArgumentList $workDir, $scriptPath -Name "git-watcher-job"
     
-    Write-Host "git-watcher started in background as a PowerShell Job."
+    Write-Host "git-watcher를 PowerShell Job 백그라운드에서 실행했습니다."
     exit 0
 }
 
-# 媛먯떆??媛앹껜 ?앹꽦
-
+# 감시자 객체 생성
 $watcher = New-Object System.IO.FileSystemWatcher
 $watcher.Path = $workDir
 $watcher.IncludeSubdirectories = $true
 $watcher.EnableRaisingEvents = $true
 
-# ?쒖쇅 ?꾪꽣 ?⑥닔 (.git, .venv, .agents ??蹂寃?臾댁떆)
-
+# 제외 필터 함수 (.git, .venv, .agents 등 변경 무시)
 function Should-Ignore($filePath) {
     if ($filePath -match '\\\.git\\' -or 
         $filePath -match '\\\.venv\\' -or 
@@ -79,32 +73,28 @@ function Should-Ignore($filePath) {
     return $false
 }
 
-# ?먮룞 而ㅻ컠 & ?몄떆 ?숆린???⑥닔
-
+# 자동 커밋 & 푸시 동기화 함수
 function Sync-Changes($action, $filePath) {
     if (Should-Ignore $filePath) { return }
     
-    # ?붾컮?댁떛: ?뚯씪 蹂寃?吏곹썑 ?붿뒪???곌린媛 ?꾨즺?섍린瑜??좎떆 ?湲?    
+    # 디바운싱: 파일 변경 직후 디스크 쓰기가 완료되기를 잠시 대기
     Start-Sleep -Seconds 3
     
-    # git 蹂寃쎌궗???뺤씤
-    
+    # git 변경사항 확인
     $status = git status --porcelain
     if ($status) {
         $fileName = Split-Path $filePath -Leaf
-        Write-Host "[$action] $fileName detected -> Syncing with Git"
+        Write-Host "[$action] $fileName 감지됨 -> Git 동기화 진행"
         git add -A
         $currentTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         
-        # ?먮룞 而ㅻ컠 ?ㅽ뻾
-        
+        # 자동 커밋 실행
         git commit -m "Auto-commit: $currentTime [$action] $fileName"
         git push
     }
 }
 
-# ?뚯씪 ?쒖뒪???대깽???깅줉
-
+# 파일 시스템 이벤트 등록
 $onChange = Register-ObjectEvent $watcher "Changed" -Action {
     Sync-Changes "Modify" $Event.SourceEventArgs.FullPath
 }
@@ -118,14 +108,13 @@ $onRenamed = Register-ObjectEvent $watcher "Renamed" -Action {
     Sync-Changes "Rename" $Event.SourceEventArgs.FullPath
 }
 
-# 猷⑦봽瑜??뚮ŉ ?대깽???湲?
+# 루프를 돌며 이벤트 대기
 try {
     while ($true) {
         Start-Sleep -Seconds 1
     }
 } finally {
-    # 由ъ냼???뺣━
-    
+    # 리소스 정리
     $watcher.Dispose()
     Unregister-Event -SourceIdentifier $onChange.Name -ErrorAction SilentlyContinue
     Unregister-Event -SourceIdentifier $onCreated.Name -ErrorAction SilentlyContinue
