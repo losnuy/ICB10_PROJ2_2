@@ -109,7 +109,7 @@ def scrape_klook_data():
     
     print("[정보] Klook 상품 데이터 SQLite 수집을 시작합니다. (페이지 단위 실시간 커밋 및 0.1~1초 지연 적용)")
     
-    while True:
+    while page <= 10:
         # 페이지마다 Referer와 파라미터가 유동적으로 변하므로 요청 전에 구성합니다.
         referer_url = f"https://www.klook.com/ko/search/result/?query={urllib.parse.quote(query)}&search_scope=main_search&sort=most_relevant&tab_key=0&start={page}"
         
