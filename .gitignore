@@ -76,3 +76,11 @@ temp/
 !.gitattributes
 !.github/
 !.gitkeep
+
+# 10. 프로젝트 내 임시 테스트(스크래치) 및 데이터 덤프 파일 무시
+**/scratch_*
+*cookies_dump.json
+*dumped_page.txt
+*join_check_results.txt
+*raw_json_check.txt
+
