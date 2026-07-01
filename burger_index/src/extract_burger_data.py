@@ -62,14 +62,39 @@ def main():
     # 추출된 데이터가 있는 경우 병합하여 파일로 저장
     if filtered_dfs:
         merged_df = pd.concat(filtered_dfs, ignore_index=True)
-        print(f"\n필터링 완료. 전체 추출 데이터 건수: {len(merged_df)}건")
+        print(f"\n필터링 완료. 전체 추출 데이터 건수 (정제 전): {len(merged_df)}건")
         
         # 출력 폴더 생성 (이미 존재하지만 방어 코드 추가)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        # 엑셀에서 열 때 깨지지 않도록 utf-8-sig 인코딩 사용
-        merged_df.to_csv(output_path, index=False, encoding="utf-8-sig")
-        print(f"성공적으로 데이터를 병합하여 '{output_path}'에 저장했습니다.")
+        # [추가] 1. 원본(정제 전) 데이터를 burger_raw.csv로 백업 저장
+        raw_output_path = os.path.join(data_dir, "burger_raw.csv")
+        merged_df.to_csv(raw_output_path, index=False, encoding="utf-8-sig")
+        print(f"정제 전 원본 데이터를 '{raw_output_path}'에 저장했습니다.")
+        
+        # [추가] 2. 오탐 데이터 제거 (교육, 과학·기술 대분류 업종 제거)
+        # 교육(체육학원 등), 과학·기술(경영 컨설팅업 등)은 실제 버거 브랜드 매장이 아님
+        invalid_categories = ["교육", "과학·기술"]
+        cleaned_df = merged_df[~merged_df["상권업종대분류명"].isin(invalid_categories)].copy()
+        otam_count = len(merged_df) - len(cleaned_df)
+        print(f"오탐 데이터 {otam_count}건을 제거했습니다.")
+        
+        # [추가] 3. 실질적 매장 중복 제거 (상호명 및 도로명주소 일치 기준)
+        # 비교를 위해 상호명 및 도로명주소에서 공백을 제거하고 소문자로 통일
+        cleaned_df["상호명_정제"] = cleaned_df["상호명"].astype(str).str.replace(r"\s+", "", regex=True).str.lower()
+        cleaned_df["주소_정제"] = cleaned_df["도로명주소"].astype(str).str.replace(r"\s+", "", regex=True)
+        
+        before_dedup = len(cleaned_df)
+        cleaned_df = cleaned_df.drop_duplicates(subset=["상호명_정제", "주소_정제"], keep="first")
+        dedup_count = before_dedup - len(cleaned_df)
+        print(f"중복 매장 데이터 {dedup_count}건을 제거했습니다.")
+        
+        # 임시 컬럼 삭제
+        cleaned_df = cleaned_df.drop(columns=["상호명_정제", "주소_정제"])
+        
+        # 엑셀에서 열 때 깨지지 않도록 utf-8-sig 인코딩 사용하여 최종 정제 데이터 저장
+        cleaned_df.to_csv(output_path, index=False, encoding="utf-8-sig")
+        print(f"성공적으로 정제된 데이터를 병합하여 '{output_path}'에 저장했습니다. (최종 건수: {len(cleaned_df)}건)")
     else:
         print("\n추출된 버거 브랜드 데이터가 없습니다. 파일 생성을 취소합니다.")
 
