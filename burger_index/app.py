@@ -304,10 +304,20 @@ elif page == "3) 행정구역별 버거지수 단계구분도":
         highlight=True
     ).add_to(m_ch)
     
-    # 호버 툴팁 기능을 추가하기 위해 GeoJson 레이어를 추가로 입힘
-    # 크로스탭에서 코드를 기준으로 정보 매핑을 쉽게 하기 위해 딕셔너리 구축
-    crosstab_info = df_clean.set_index("시군구코드").to_dict(orient="index")
+    # 툴팁용 데이터를 GeoJSON properties에 동적 결합 (data 중복 인수 TypeError 해결 및 가독성 개선)
+    import copy
+    geojson_temp = copy.deepcopy(geojson_data)
     
+    code_to_bi = df_clean.set_index("시군구코드")["버거지수"].to_dict()
+    code_to_name = df_clean.set_index("시군구코드")["시도시군구명"].to_dict()
+    
+    for feature in geojson_temp["features"]:
+        code = feature["properties"].get("code")
+        bi_val = code_to_bi.get(code, 0.0)
+        full_name = code_to_name.get(code, feature["properties"].get("name"))
+        feature["properties"]["burger_index"] = round(float(bi_val), 2)
+        feature["properties"]["full_name"] = full_name
+        
     def style_function(feature):
         return {
             "fillColor": "transparent",
@@ -325,18 +335,16 @@ elif page == "3) 행정구역별 버거지수 단계구분도":
         
     # GeoJSON 레이어에 개별 툴팁 적용
     folium.GeoJson(
-        geojson_data,
+        geojson_temp,
         style_function=style_function,
         highlight_function=highlight_function,
         tooltip=folium.GeoJsonTooltip(
-            fields=["name"], # 우선 GeoJSON의 name(시군구명) 필드를 띄우고 아래와 결합
-            aliases=["지역명:"],
+            fields=["full_name", "burger_index"],
+            aliases=["지역명:", "버거지수:"],
             localize=True,
             sticky=True,
             labels=True
-        ),
-        # 툴팁을 커스텀하게 꾸미기 위해 각 피처별 버거지수 매핑 추가
-        data=df_clean
+        )
     ).add_to(m_ch)
     
     # 맵 출력
