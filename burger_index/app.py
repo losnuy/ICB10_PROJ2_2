@@ -288,36 +288,118 @@ elif page == "3) 행정구역별 버거지수 단계구분도":
         "전국 지자체 단위별 버거지수 크기를 면적의 색상 농도로 표현합니다."
     )
     
-    # 지도 중심 설정
+    # 1. 부천시/화성시 등 통합구 처리 및 통계청 코드 매핑 데이터프레임 빌드
+    df_map_data = df_clean.copy()
+    
+    # 경기도 부천시 (3개 구 합산 통합 처리)
+    df_bucheon = df_map_data[df_map_data["시도시군구명"].str.contains("부천시")]
+    if len(df_bucheon) > 0:
+        bt_kfc = df_bucheon["KFC"].sum()
+        bt_lot = df_bucheon["롯데리아"].sum()
+        bt_mac = df_bucheon["맥도날드"].sum()
+        bt_bkg = df_bucheon["버거킹"].sum()
+        bt_tot = df_bucheon["합계"].sum()
+        bt_bi = round((bt_bkg + bt_mac + bt_kfc) / bt_lot, 2) if bt_lot > 0 else 0.0
+        
+        df_map_data = pd.concat([df_map_data, pd.DataFrame([{
+            "시도시군구명": "경기도 부천시",
+            "KFC": bt_kfc, "롯데리아": bt_lot, "맥도날드": bt_mac, "버거킹": bt_bkg,
+            "합계": bt_tot, "버거지수": bt_bi, "시군구코드": ""
+        }])], ignore_index=True)
+        
+    # 경기도 화성시 (4개 구 합산 통합 처리)
+    df_hwaseong = df_map_data[df_map_data["시도시군구명"].str.contains("화성시")]
+    if len(df_hwaseong) > 0:
+        hw_kfc = df_hwaseong["KFC"].sum()
+        hw_lot = df_hwaseong["롯데리아"].sum()
+        hw_mac = df_hwaseong["맥도날드"].sum()
+        hw_bkg = df_hwaseong["버거킹"].sum()
+        hw_tot = df_hwaseong["합계"].sum()
+        hw_bi = round((hw_bkg + hw_mac + hw_kfc) / hw_lot, 2) if hw_lot > 0 else 0.0
+        
+        df_map_data = pd.concat([df_map_data, pd.DataFrame([{
+            "시도시군구명": "경기도 화성시",
+            "KFC": hw_kfc, "롯데리아": hw_lot, "맥도날드": hw_mac, "버거킹": hw_bkg,
+            "합계": hw_tot, "버거지수": hw_bi, "시군구코드": ""
+        }])], ignore_index=True)
+        
+    # 통계청 시도코드 -> 행안부 시도명 매핑 테이블
+    kostat_sido_to_name = {
+        "11": "서울특별시", "21": "부산광역시", "22": "대구광역시", "23": "인천광역시",
+        "24": "광주광역시", "25": "대전광역시", "26": "울산광역시", "29": "세종특별자치시",
+        "31": "경기도", "32": "강원특별자치도", "33": "충청북도", "34": "충청남도",
+        "35": "전북특별자치도", "36": "전라남도", "37": "경상북도", "38": "경상남도", "39": "제주특별자치도"
+    }
+    
+    crosstab_names = df_map_data["시도시군구명"].tolist()
+    kostat_code_to_name = {}
+    
+    # 툴팁 및 단계구분 데이터 결합을 위해 GeoJSON 템플릿 복사 후 가공
+    import copy
+    geojson_temp = copy.deepcopy(geojson_data)
+    
+    for feature in geojson_temp["features"]:
+        props = feature["properties"]
+        code = props.get("code", "")
+        name = props.get("name", "")
+        sido_code = code[:2]
+        sido_name = kostat_sido_to_name.get(sido_code, "")
+        
+        # 공백을 모두 제거한 한글 지명 조합으로 정밀 매핑 진행
+        geo_name_stripped = (sido_name + name).replace(" ", "")
+        
+        # 특수 행정구역 매칭 예외 규칙
+        if code == "23030":  # 인천 남구 -> 미추홀구 개칭 매핑
+            geo_name_stripped = "인천광역시미추홀구"
+        elif sido_code == "29":  # 세종시 단일 자치구 매핑
+            geo_name_stripped = "세종특별자치시세종특별자치시"
+            
+        matched_name = None
+        for c_name in crosstab_names:
+            c_name_stripped = c_name.replace(" ", "")
+            if c_name_stripped == geo_name_stripped:
+                matched_name = c_name
+                break
+                
+        # 행정구(부천/화성) 예외 2차 통합 처리
+        if not matched_name:
+            if name == "부천시" and sido_name == "경기도":
+                matched_name = "경기도 부천시"
+            elif name == "화성시" and sido_name == "경기도":
+                matched_name = "경기도 화성시"
+                
+        if matched_name:
+            kostat_code_to_name[code] = matched_name
+            # GeoJSON properties에 버거지수와 지역 풀네임 동적 주입
+            row = df_map_data[df_map_data["시도시군구명"] == matched_name].iloc[0]
+            props["burger_index"] = float(row["버거지수"])
+            props["full_name"] = matched_name
+        else:
+            props["burger_index"] = 0.0
+            props["full_name"] = f"{sido_name} {name} (매장 정보 없음)"
+            
+    # 크로스탭 데이터프레임의 시군구코드를 행안부 코드 -> 통계청 코드로 완전 갱신
+    name_to_kostat_code = {v: k for k, v in kostat_code_to_name.items()}
+    df_map_data["시군구코드"] = df_map_data["시도시군구명"].map(name_to_kostat_code)
+    df_map_data = df_map_data.dropna(subset=["시군구코드"])
+    
+    # 지도 객체 생성 및 그리기
     m_ch = folium.Map(location=[36.3, 127.8], zoom_start=7, tiles="cartodbpositron")
     
-    # 지리적 경계 데이터를 맵핑하기 위한 Choropleth 레이어 추가
-    choropleth = folium.Choropleth(
-        geo_data=geojson_data,
-        data=df_clean,
+    # 통계청 코드로 완벽 동기화된 Choropleth 그리기
+    folium.Choropleth(
+        geo_data=geojson_temp,
+        data=df_map_data,
         columns=["시군구코드", "버거지수"],
-        key_on="feature.properties.code", # GeoJSON의 properties.code 매칭
-        fill_color="YlOrRd", # 황색-적색 그라데이션
+        key_on="feature.properties.code",
+        fill_color="YlOrRd",
         fill_opacity=0.7,
         line_opacity=0.3,
         legend_name="버거지수 (Burger Index)",
         highlight=True
     ).add_to(m_ch)
     
-    # 툴팁용 데이터를 GeoJSON properties에 동적 결합 (data 중복 인수 TypeError 해결 및 가독성 개선)
-    import copy
-    geojson_temp = copy.deepcopy(geojson_data)
-    
-    code_to_bi = df_clean.set_index("시군구코드")["버거지수"].to_dict()
-    code_to_name = df_clean.set_index("시군구코드")["시도시군구명"].to_dict()
-    
-    for feature in geojson_temp["features"]:
-        code = feature["properties"].get("code")
-        bi_val = code_to_bi.get(code, 0.0)
-        full_name = code_to_name.get(code, feature["properties"].get("name"))
-        feature["properties"]["burger_index"] = round(float(bi_val), 2)
-        feature["properties"]["full_name"] = full_name
-        
+    # 툴팁용 스타일 및 하이라이트 함수
     def style_function(feature):
         return {
             "fillColor": "transparent",
@@ -333,7 +415,7 @@ elif page == "3) 행정구역별 버거지수 단계구분도":
             "color": "#2c3e50"
         }
         
-    # GeoJSON 레이어에 개별 툴팁 적용
+    # 호버 하이라이트 및 결합된 툴팁(지역 전체 명칭, 버거지수) 출력 레이어
     folium.GeoJson(
         geojson_temp,
         style_function=style_function,
