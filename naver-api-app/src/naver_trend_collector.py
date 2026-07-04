@@ -244,8 +244,6 @@ def collect_naver_trends(job_category="accounting"):
 
 if __name__ == "__main__":
     initialize_db()
-    # 3대 직무군 전체를 동기 수집하여 DB 무결성을 완벽하게 보장합니다.
-    for category in ["accounting", "it_dev", "marketing"]:
-        collect_naver_trends(category)
-        time.sleep(1.5) # API 호출간 지연 적용 (Rate Limit 대응)
-    print("=== 네이버 트렌드 데이터 수집 완료 ===")
+    # 회계 직무 구직 관심 분석을 위해 오직 회계(accounting) 데이터만 수집 및 적재합니다.
+    collect_naver_trends("accounting")
+    print("=== 회계 직무 네이버 트렌드 데이터 수집 완료 ===")
