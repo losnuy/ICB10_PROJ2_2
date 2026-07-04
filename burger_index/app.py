@@ -76,7 +76,7 @@ total_row = df_cross[df_cross["시도시군구명"] == "합계"].iloc[0]
 st.sidebar.title("🍔 버거지수 분석 메뉴")
 page = st.sidebar.radio(
     "페이지를 이동하세요:",
-    ["1) 기본 EDA 및 통계 분석", "2) 위경도 위치 기반 버거지수 지도", "3) 행정구역별 버거지수 단계구분도"]
+    ["1) 기본 EDA 및 통계 분석", "2) 위경도 위치 기반 버거지수 지도", "3) 행정구역별 버거지수 단계구분도", "4) 전국 시군구단위 버거지수 카토그램"]
 )
 
 st.sidebar.markdown("---")
@@ -437,4 +437,145 @@ elif page == "3) 행정구역별 버거지수 단계구분도":
         "수도권 및 광역시급 번화가 지역이 짙은 주황~적색을 띠고 있으며, "
         "대다수 지방 도시 및 외곽 지역은 옅은 황색(버거지수 0 부근)을 보이고 있어 "
         "국내 버거 브랜드 인프라의 지역적 불균형을 한눈에 확인할 수 있습니다."
+    )
+
+# ----------------------------------------------------
+# 페이지 4: 전국 시군구단위 버거지수 카토그램
+# ----------------------------------------------------
+elif page == "4) 전국 시군구단위 버거지수 카토그램":
+    st.title("🗺️ 전국 시군구단위 버거지수 카토그램 (Cartogram)")
+    st.write(
+        "지리적 실제 면적 왜곡을 제거하고 전국 시군구의 위치 관계를 격자 바둑판 모양으로 단순화하여 "
+        "버거지수의 상대적 분포 수준을 고르게 확인하는 카토그램 시각화입니다."
+    )
+    
+    try:
+        df_draw = pd.read_csv("burger_index/data/data_draw_korea.csv", encoding="utf-8-sig")
+        # 컬럼명 영어 표준화
+        df_draw.columns = ["id", "인덱스", "shortName", "x", "y", "면적", "광역시도", "행정구역"]
+    except Exception as e:
+        st.error(f"카토그램 좌표 파일을 로드하지 못했습니다: {e}")
+        st.stop()
+        
+    # 1. 부천시/화성시 통합 데이터프레임 빌드
+    df_map_data = df_clean.copy()
+    
+    # 경기도 부천시 통합
+    df_bucheon = df_map_data[df_map_data["시도시군구명"].str.contains("부천시")]
+    if len(df_bucheon) > 0:
+        bt_kfc = df_bucheon["KFC"].sum()
+        bt_lot = df_bucheon["롯데리아"].sum()
+        bt_mac = df_bucheon["맥도날드"].sum()
+        bt_bkg = df_bucheon["버거킹"].sum()
+        bt_tot = df_bucheon["합계"].sum()
+        bt_bi = round((bt_bkg + bt_mac + bt_kfc) / bt_lot, 2) if bt_lot > 0 else 0.0
+        df_map_data = pd.concat([df_map_data, pd.DataFrame([{
+            "시도시군구명": "경기도 부천시",
+            "KFC": bt_kfc, "롯데리아": bt_lot, "맥도날드": bt_mac, "버거킹": bt_bkg,
+            "합계": bt_tot, "버거지수": bt_bi, "시군구코드": ""
+        }])], ignore_index=True)
+        
+    # 경기도 화성시 통합
+    df_hwaseong = df_map_data[df_map_data["시도시군구명"].str.contains("화성시")]
+    if len(df_hwaseong) > 0:
+        hw_kfc = df_hwaseong["KFC"].sum()
+        hw_lot = df_hwaseong["롯데리아"].sum()
+        hw_mac = df_hwaseong["맥도날드"].sum()
+        hw_bkg = df_hwaseong["버거킹"].sum()
+        hw_tot = df_hwaseong["합계"].sum()
+        hw_bi = round((hw_bkg + hw_mac + hw_kfc) / hw_lot, 2) if hw_lot > 0 else 0.0
+        df_map_data = pd.concat([df_map_data, pd.DataFrame([{
+            "시도시군구명": "경기도 화성시",
+            "KFC": hw_kfc, "롯데리아": hw_lot, "맥도날드": hw_mac, "버거킹": hw_bkg,
+            "합계": hw_tot, "버거지수": hw_bi, "시군구코드": ""
+        }])], ignore_index=True)
+        
+    # 2. 광역시도 지명 표준화 및 매칭 키(공백 없는 지명) 결합
+    sido_std = {
+        "강원도": "강원특별자치도",
+        "전라북도": "전북특별자치도",
+        "제주특별자치도": "제주특별자치도",
+        "세종시": "세종특별자치시"
+    }
+    df_draw["광역시도_std"] = df_draw["광역시도"].replace(sido_std)
+    df_draw["key"] = (df_draw["광역시도_std"] + df_draw["행정구역"]).str.replace(" ", "")
+    
+    # 세종시 예외 키 통일
+    df_draw.loc[df_draw["광역시도"] == "세종특별자치시", "key"] = "세종특별자치시세종특별자치시"
+    
+    # 인천 미추홀구(과거 남구) 예외 매핑
+    df_draw.loc[df_draw["key"] == "인천광역시남구", "key"] = "인천광역시미추홀구"
+    
+    # 크로스탭 측에도 매칭용 키 생성
+    df_map_data["key"] = df_map_data["시도시군구명"].str.replace(" ", "")
+    
+    # 병합 수행
+    df_merged = pd.merge(df_draw, df_map_data.drop(columns=["시군구코드"], errors="ignore"), on="key", how="left")
+    
+    # 매장 데이터가 없어서 병합되지 않은 지자체 결측치 0.0 및 명칭 처리
+    df_merged["버거지수"] = df_merged["버거지수"].fillna(0.0)
+    df_merged["합계"] = df_merged["합계"].fillna(0.0).astype(int)
+    df_merged["KFC"] = df_merged["KFC"].fillna(0).astype(int)
+    df_merged["롯데리아"] = df_merged["롯데리아"].fillna(0).astype(int)
+    df_merged["맥도날드"] = df_merged["맥도날드"].fillna(0).astype(int)
+    df_merged["버거킹"] = df_merged["버거킹"].fillna(0).astype(int)
+    df_merged["시도시군구명"] = df_merged["시도시군구명"].fillna(df_merged["광역시도_std"] + " " + df_merged["행정구역"])
+    
+    # 3. Plotly Express를 활용한 바둑판형 격자 맵 생성
+    # 배경 색상 명도 대조를 위해 텍스트 색상 분기 설정
+    text_colors = ["white" if val >= 1.5 else "black" for val in df_merged["버거지수"]]
+    
+    fig_carto = px.scatter(
+        df_merged,
+        x="x",
+        y="y",
+        color="버거지수",
+        text="shortName",
+        # 가이드 이미지와 유사하게 파란색 계열(Blues) 맵 적용
+        color_continuous_scale="Blues",
+        hover_name="시도시군구명",
+        hover_data={
+            "버거지수": ":.2f",
+            "합계": True,
+            "KFC": True,
+            "롯데리아": True,
+            "맥도날드": True,
+            "버거킹": True,
+            "x": False,
+            "y": False
+        }
+    )
+    
+    # 사각형 크기와 외곽 테두리선 조절하여 바둑판 그리드 형성
+    fig_carto.update_traces(
+        marker=dict(
+            symbol="square",
+            size=38,  # 격자가 서로 맞닿도록 조정한 크기
+            line=dict(width=0.8, color="#e0e0e0")
+        ),
+        textposition="middle center",
+        textfont=dict(size=9, family="Malgun Gothic", weight="bold", color=text_colors)
+    )
+    
+    # 레이아웃 튜닝 (Y축은 뒤집기, 축 눈금 숨기기)
+    fig_carto.update_layout(
+        width=750,
+        height=950,
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, title=""),
+        yaxis=dict(autorange="reversed", showgrid=False, zeroline=False, showticklabels=False, title=""),
+        plot_bgcolor="white",
+        title_font=dict(size=18, family="Malgun Gothic", color="#2c3e50"),
+        hoverlabel=dict(bgcolor="white", font_size=12, font_family="Malgun Gothic")
+    )
+    
+    # 차트 출력
+    st.plotly_chart(fig_carto, use_container_width=True)
+    
+    st.info(
+        "**💡 카토그램 분석 인사이트**: "
+        "실제 대한민국 국토의 지리적 왜곡(강원도, 경상북도 등의 거대 면적 대비 적은 인구 밀도 등)을 완전히 제거하고, "
+        "인구 밀집에 따른 지자체 행정 단위를 균일한 크기의 사각형 격자로 비교한 결과입니다. "
+        "수도권(서울/경기) 및 5대 광역시에 파란색 농도(버거지수 1.5 ~ 3.0 이상)가 압도적으로 밀집되어 있으며, "
+        "지방 군 단위 외곽 지역은 매우 옅은 하늘색 또는 흰색(0.0 부근)으로 남아 있어, "
+        "소비 시장 및 유동 인구 중심의 패스트푸드 인프라 양극화를 극명하게 보여줍니다."
     )
