@@ -1,0 +1,13 @@
+<class 'pandas.DataFrame'>
+RangeIndex: 8547840 entries, 0 to 8547839
+Data columns (total 6 columns):
+ #   Column  Dtype   
+---  ------  -----   
+ 0   기준일ID   category
+ 1   시간대구분   int8    
+ 2   행정동코드   category
+ 3   생활인구수   float32 
+ 4   성별      category
+ 5   연령대     category
+dtypes: category(4), float32(1), int8(1)
+memory usage: 81.5 MB
