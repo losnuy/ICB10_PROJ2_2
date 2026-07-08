@@ -33,8 +33,9 @@ st.set_page_config(
 )
 
 # 경로 상수
-DB_PATH = os.path.join("recruit", "data", "recruit.db")
-ACCOUNTING_KEYWORDS_PATH = os.path.join("recruit", "accounting_keywords.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "data", "recruit.db")
+ACCOUNTING_KEYWORDS_PATH = os.path.join(BASE_DIR, "accounting_keywords.json")
 
 # -------------------------------------------------------------
 # 다중 직무 메타데이터 정의 (Multi-job Configuration)
