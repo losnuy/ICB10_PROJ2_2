@@ -6,4 +6,9 @@
 - [x] 최종 결과 보고서/Walkthrough 작성
 - [x] 지도 시각화 기능 기획 및 사용자 승인
 - [x] southkorea-maps GeoJSON 다운로드 및 매핑 연동 개발 (utils.py & app.py)
-- [/] 변경된 대시보드 검증 및 Walkthrough 업데이트
+- [x] 변경된 대시보드 검증 및 Walkthrough 업데이트
+- [x] SQLite DB 프리컴파일 설계 및 기획안 승인
+- [x] DB 프리컴파일러 개발 및 실행 (seoul-pops/src/precalculate_db.py)
+- [x] DB 연동형 데이터 로더 및 캐시 구현 (seoul-pops/src/utils.py)
+- [x] 지도 툴팁 개선 및 DB 최적화 대시보드 반영 (seoul-pops/src/app.py)
+- [/] 대시보드 재검증 및 최종 walkthrough.md 갱신 배포

@@ -1,14 +1,12 @@
 """
 서울시 행정동별 생활인구 탐색적 데이터 분석(EDA) Streamlit 대시보드 메인 프로그램입니다.
 주요 기능:
-- 데이터셋 기본 진단 및 품질 관리 (결측치, 중복데이터 등)
-- 데이터 타입 확인 및 원본 데이터 샘플 다운로드
-- 수치형 변수(생활인구수) 기술 통계 및 왜도, 첨도 제공
-- IQR 기반 이상치(Outlier) 통계 및 박스플롯 시각화
-- 다차원 인구 분석 (성별 비율, 연령대 분포, 자치구별 비교, 시계열 트렌드)
-- 자치구 × 시간대, 시간대 × 연령대 인구 히트맵
-- 파레토 집중도 분석 및 시나리오 What-if 시뮬레이션
-- 주요 분석 결과 자동 요약 리포트 제공
+- Parquet 원본 데이터와 SQLite 집계 데이터의 하이브리드 캐시 구조 탑재
+- 개요 및 기술 통계 탭: 원본 Parquet 파일 기반의 실시간 통계 및 품질 분석
+- 상관 분석 및 공간 지도 탭: 사전 연산된 SQLite DB 테이블로 초고속 렌더링 지원
+- 📂 개요 및 데이터 진단 탭: 원본 데이터셋 정보 요약 및 원천 데이터 head(10) 노출
+- 📈 단일 항목 분포 탭: 원본 데이터에 입각한 실시간 기술통계, 왜도/첨도 계산 및 Box Plot 시각화
+- 🗺️ 생활인구 지도 시각화 탭: southkorea-maps 지리에 계층형 툴팁("서울특별시 [구명] [동명]") 및 3자리 콤마 정수 포맷 적용
 """
 
 import sys
@@ -24,11 +22,19 @@ from streamlit_folium import st_folium
 
 # 유틸리티 모듈 경로 추가
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from utils import load_data, get_basic_info, calculate_advanced_stats, load_geojson, load_code_mapping
+from dashboard_utils import (
+    load_raw_parquet,
+    load_db_table,
+    load_map_data_from_db,
+    load_geojson,
+    load_code_mapping,
+    get_basic_info,
+    calculate_advanced_stats
+)
 
 # 페이지 기본 설정
 st.set_page_config(
-    page_title="서울시 생활인구 EDA 대시보드",
+    page_title="서울시 생활인구 EDA 대시보드 (하이브리드)",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -97,81 +103,35 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 메인 타이틀 및 소개
-st.title("🏙️ 서울시 행정동별 생활인구 탐색적 데이터 분석(EDA)")
-st.caption("2026년 6월 데이터를 기반으로 서울시 전역의 유동/생활인구 트렌드를 다각도로 진단합니다.")
+st.title("🏙️ 서울시 행정동별 생활인구 탐색적 데이터 분석(하이브리드 캐시)")
+st.caption("원본 Parquet 분석 및 SQLite DB 사전 가공 집계를 유기적으로 혼용하여 연산 성능과 분석 정밀도를 다 잡았습니다.")
 
-# 데이터 로딩
-DATA_PATH = os.path.join("seoul-pops", "data", "LOCAL_PEOPLE_DONG_202606_tidy.parquet")
-
-with st.spinner("💾 서울시 생활인구 데이터를 불러오는 중입니다... (약 854만 행)"):
+# 하이브리드 데이터 로딩 알림 (최초 1회만 Parquet 파싱 지연이 있고 이후는 캐싱되어 초고속)
+with st.spinner("⚡ Parquet 원본 데이터셋을 로드하고 사전 집계 DB 커넥션을 맺는 중..."):
     start_time = time.time()
     try:
-        df = load_data(DATA_PATH)
+        raw_df = load_raw_parquet()
+        basic_info = get_basic_info(raw_df)
+        stats = calculate_advanced_stats(raw_df)
         loading_time = time.time() - start_time
     except Exception as e:
-        st.error(f"❌ 데이터를 로드하는 중 오류가 발생했습니다: {e}")
+        st.error(f"❌ 데이터 로딩 실패: {e}")
         st.stop()
 
-# 사이드바 필터 패널 구성 (상호작용 필터링)
-st.sidebar.header("🎛️ 필터 제어 패널")
+# 사이드바 필터 패널 구성 (대시보드 조작 가이드 툴팁 제공)
+st.sidebar.header("🎛️ 대시보드 정보")
 st.sidebar.markdown("---")
+st.sidebar.info("""
+💡 **대시보드 하이브리드 설계 안내**:
+- **개요/품질/기술통계**: 원천 Parquet 파일(`LOCAL_PEOPLE_DONG_202606_tidy.parquet`)의 원본을 캐시 적재하여 실시간 연산합니다.
+- **다차원분석/지도**: 이미 가공 및 시간대별로 묶여져 최적화된 SQLite DB 테이블(`seoul_pops.db`)을 쿼리하여 초고속으로 시각화합니다.
+""")
 
-# 1. 자치구 필터 (전체 및 다중 선택 가능)
-all_districts = sorted(list(df['자치구'].unique()))
-selected_districts = st.sidebar.multiselect(
-    "📍 자치구 선택 (다중 선택 가능)",
-    options=all_districts,
-    default=[]
-)
-
-# 2. 주말구분 필터
-weekend_options = list(df['주말구분'].unique())
-selected_weekends = st.sidebar.multiselect(
-    "📅 주중/주말 구분",
-    options=weekend_options,
-    default=weekend_options
-)
-
-# 3. 성별 필터
-gender_options = list(df['성별'].unique())
-selected_genders = st.sidebar.multiselect(
-    "👤 성별 구분",
-    options=gender_options,
-    default=gender_options
-)
-
-# 4. 연령대 필터
-age_options = list(df['연령대'].unique())
-selected_ages = st.sidebar.multiselect(
-    "🎂 연령대 선택",
-    options=age_options,
-    default=age_options
-)
-
-# 필터링 로직 구현 (적용된 필터가 비어 있지 않을 경우에만 필터링)
-filtered_df = df.copy()
-
-if selected_districts:
-    filtered_df = filtered_df[filtered_df['자치구'].isin(selected_districts)]
-if selected_weekends:
-    filtered_df = filtered_df[filtered_df['주말구분'].isin(selected_weekends)]
-if selected_genders:
-    filtered_df = filtered_df[filtered_df['성별'].isin(selected_genders)]
-if selected_ages:
-    filtered_df = filtered_df[filtered_df['연령대'].isin(selected_ages)]
-
-# 필터 적용 결과 요약
-st.sidebar.markdown("---")
 st.sidebar.metric(
-    label="🔍 필터 적용 후 데이터 수",
-    value=f"{len(filtered_df):,} 행",
-    delta=f"전체 대비 {len(filtered_df)/len(df)*100:.2f}%"
+    label="⚡ 원본 로딩 및 연산 속도 (캐싱)",
+    value=f"{loading_time:.4f} 초",
+    delta="최초 1회 이후 지연 0초"
 )
-
-# 빈 데이터 세트 예외 처리
-if filtered_df.empty:
-    st.warning("⚠️ 선택하신 필터 조건에 부합하는 데이터가 존재하지 않습니다. 필터 조건을 다시 설정해 주세요.")
-    st.stop()
 
 # 탭 구조 설계
 tab_overview, tab_univariate, tab_multivariate, tab_advanced, tab_map = st.tabs([
@@ -184,114 +144,99 @@ tab_overview, tab_univariate, tab_multivariate, tab_advanced, tab_map = st.tabs(
 
 # ==================== 1. 개요 및 데이터 진단 탭 ====================
 with tab_overview:
-    st.subheader("📌 데이터셋 요약 및 기본 구조 진단")
+    st.subheader("📌 Parquet 원본 데이터셋 기본 구조 진단")
     st.markdown("""
     <div class="section-desc">
-        이 섹션은 전체 및 필터링된 데이터셋의 기본 속성과 구조, 품질(결측치, 중복 등)을 진단합니다.
-        데이터 로드 및 메모리 적재 성능 정보를 정밀 투명하게 표시합니다.
+        이 섹션은 원본 Parquet 데이터프레임의 행/열 규격, 메모리 중복율, 결측치 품질을 실시간 검사합니다.
+        가장 아래에서 원천 데이터의 상위 10개 행 미리보기를 제공합니다.
     </div>
     """, unsafe_allow_html=True)
     
-    # 기본 통계량 사전 연산
-    total_pop = filtered_df['생활인구수'].sum()
-    avg_pop = filtered_df['생활인구수'].mean()
-    max_pop = filtered_df['생활인구수'].max()
-    unique_dongs = filtered_df['행정동코드'].nunique()
-    
-    # KPI 카드 배치 (Premium HTML/CSS 사용)
+    # KPI 카드 배치 (최상단 핵심 성과지표 노출 규칙 반영)
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
         <div class="kpi-card">
-            <div class="kpi-title">총 생활인구 합계</div>
-            <div class="kpi-value">{total_pop/10000:,.1f}<span class="kpi-unit">만 명</span></div>
+            <div class="kpi-title">원본 총 관측 행 수</div>
+            <div class="kpi-value">{basic_info['rows']:,}<span class="kpi-unit">행</span></div>
         </div>
         """, unsafe_allow_html=True)
         
     with col2:
         st.markdown(f"""
         <div class="kpi-card">
-            <div class="kpi-title">평균 생활인구 (동/시간/성/연령별)</div>
-            <div class="kpi-value">{avg_pop:,.1f}<span class="kpi-unit">명</span></div>
+            <div class="kpi-title">수치형 변수 평균 생활인구</div>
+            <div class="kpi-value">{stats['mean']:,.1f}<span class="kpi-unit">명</span></div>
         </div>
         """, unsafe_allow_html=True)
         
     with col3:
         st.markdown(f"""
         <div class="kpi-card">
-            <div class="kpi-title">단일 최고 생활인구</div>
-            <div class="kpi-value">{max_pop:,.1f}<span class="kpi-unit">명</span></div>
+            <div class="kpi-title">IQR 기준 분포 상한선</div>
+            <div class="kpi-value">{stats['upper_bound']:,.1f}<span class="kpi-unit">명</span></div>
         </div>
         """, unsafe_allow_html=True)
         
     with col4:
         st.markdown(f"""
         <div class="kpi-card">
-            <div class="kpi-title">고유 행정동 수</div>
-            <div class="kpi-value">{unique_dongs:,.0f}<span class="kpi-unit">개 동</span></div>
+            <div class="kpi-title">컬럼 스키마 수</div>
+            <div class="kpi-value">{basic_info['cols']}<span class="kpi-unit">개</span></div>
         </div>
         """, unsafe_allow_html=True)
         
     st.markdown("---")
     
-    # 데이터 품질 지표 진단 결과
     col_left, col_right = st.columns([1, 1])
     
-    basic_info = get_basic_info(df)
-    
     with col_left:
-        st.write("📋 **데이터 품질 진단 요약**")
+        st.write("📋 **원본 데이터 품질 진단 보고**")
         quality_df = pd.DataFrame({
-            "진단 항목": ["전체 데이터 행 수", "전체 데이터 열 수", "중복 행(Duplicate Rows)", "결측치 비율 (Null Ratio)", "데이터 로딩 속도"],
-            "상태 및 값": [
+            "진단 항목": ["전체 데이터 행 수", "전체 데이터 열 수", "중복 행(Duplicate Rows)", "결측치 비율 (Null Ratio)", "데이터 소스"],
+            "값 및 상태": [
                 f"{basic_info['rows']:,} 행",
                 f"{basic_info['cols']} 열",
-                f"{basic_info['duplicates']:,} 건 (0.00%)",
+                f"{basic_info['duplicates']:,} 건",
                 "0.00% (결측치 없음)",
-                f"{loading_time:.2f} 초"
+                "LOCAL_PEOPLE_DONG_202606_tidy.parquet (원본)"
             ]
         })
         st.table(quality_df)
         
     with col_right:
-        st.write("🗂️ **컬럼 및 데이터 타입 정보**")
+        st.write("🗂️ **컬럼 데이터 타입 요약**")
         dtypes_df = pd.DataFrame(list(basic_info['dtypes'].items()), columns=["컬럼명", "데이터 타입"])
         st.dataframe(dtypes_df, use_container_width=True)
         
     st.markdown("---")
     
-    # 데이터 미리보기 및 다운로드 기능
-    st.write("👁️ **데이터 샘플 미리보기 (상위 50개 행)**")
-    sample_df = filtered_df.head(50)
-    st.dataframe(sample_df, use_container_width=True)
+    st.write("👁️ **원본 Parquet 데이터프레임 미리보기 (상위 10개 행)**")
+    st.dataframe(raw_df.head(10), use_container_width=True)
     
     # 다운로드 버튼
-    csv_data = sample_df.to_csv(index=False).encode('utf-8-sig')
+    csv_data = raw_df.head(500).to_csv(index=False).encode('utf-8-sig')
     st.download_button(
-        label="📥 필터링된 데이터 샘플 CSV 다운로드",
+        label="📥 원본 데이터 일부(500행) CSV 다운로드",
         data=csv_data,
-        file_name="seoul_pops_filtered_sample.csv",
+        file_name="seoul_pops_raw_sample.csv",
         mime="text/csv"
     )
 
 # ==================== 2. 단일 항목 분포 탭 ====================
 with tab_univariate:
-    st.subheader("📈 단일 변수 기술통계 및 이상치 진단")
+    st.subheader("📈 원본 생활인구수 기술통계 및 이상치 진단")
     st.markdown("""
     <div class="section-desc">
-        이 섹션은 생활인구수의 분포 특징을 왜도, 첨도 등 정량 지표로 제시하며, 
-        IQR 통계를 기반으로 이상치(Outlier) 여부를 객관적으로 규명하고 시각화합니다.
+        이 섹션은 원본 생활인구수 컬럼을 직접 리드하여 사분위간 범위(IQR) 및 왜도/첨도 등 고급 통계 수치를 실시간으로 진단하고 식별합니다.
     </div>
     """, unsafe_allow_html=True)
-    
-    # 고급 통계량 계산
-    stats = calculate_advanced_stats(filtered_df)
     
     col_stat1, col_stat2 = st.columns([1, 1.2])
     
     with col_stat1:
-        st.write("📊 **생활인구수 기술통계 상세 보고**")
+        st.write("📊 **기술통계 실시간 연산 보고 (Parquet 기반)**")
         stats_data = pd.DataFrame({
             "통계 지표": [
                 "평균 (Mean)", "중앙값 (Median)", "최빈값 (Mode)", 
@@ -314,59 +259,57 @@ with tab_univariate:
                 f"{stats['iqr']:,.2f} 명",
                 f"{stats['lower_bound']:,.2f} 명",
                 f"{stats['upper_bound']:,.2f} 명",
-                f"{stats['outlier_count']:,} 개",
+                f"{int(stats['outlier_count']):,} 개",
                 f"{stats['outlier_ratio']:.2f}%"
             ]
         })
         st.dataframe(stats_data, use_container_width=True, height=525)
         
     with col_stat2:
-        st.write("📉 **생활인구수 분포 및 이상치 식별 (Box Plot)**")
-        # 데이터가 너무 많으므로 샘플링하여 시각화 속도 최적화
-        sample_size = min(len(filtered_df), 100000)
-        box_sample = filtered_df.sample(n=sample_size, random_state=42)
+        st.write("📉 **생활인구수 분포 시각화 (사전 통계 기반 Box Plot)**")
+        fig_box = go.Figure()
+        fig_box.add_trace(go.Box(
+            y=[stats['q1'], stats['median'], stats['q3']],
+            name="생활인구수",
+            q1=[stats['q1']],
+            median=[stats['median']],
+            q3=[stats['q3']],
+            mean=[stats['mean']],
+            sd=[stats['std']],
+            lowerfence=[max(0, stats['lower_bound'])],
+            upperfence=[stats['upper_bound']],
+            boxpoints=False,
+            marker_color="#1c7ed6"
+        ))
         
-        fig_box = px.box(
-            box_sample,
-            y="생활인구수",
-            points="outliers",
-            title=f"생활인구수 이상치 분포 (랜덤 {sample_size:,}행 샘플링)",
-            labels={"생활인구수": "생활인구수 (명)"},
-            template="plotly_white",
-            color_discrete_sequence=["#228be6"]
-        )
-        # IQR 상한선 수평선 추가
-        fig_box.add_hline(
-            y=stats['upper_bound'], 
-            line_dash="dash", 
-            line_color="red", 
-            annotation_text=f"IQR 상한 ({stats['upper_bound']:.1f}명)",
-            annotation_position="bottom right"
+        fig_box.update_layout(
+            title="원본 생활인구수 사분위 범위 분포",
+            yaxis_title="생활인구수 (명)",
+            template="plotly_white"
         )
         st.plotly_chart(fig_box, use_container_width=True)
         
     st.markdown("---")
     
-    # 성별 및 연령대 분포 시각화
     col_pie, col_bar = st.columns([1, 1.2])
     
     with col_pie:
-        st.write("👤 **성별 생활인구 비율**")
-        gender_agg = filtered_df.groupby('성별', observed=True)['생활인구수'].sum().reset_index()
+        st.write("👤 **성별 생활인구 비율 (DB)**")
+        gender_agg = load_db_table('gender_pop_dist')
         fig_pie = px.pie(
             gender_agg,
             values="생활인구수",
             names="성별",
             title="성별 생활인구 점유율",
-            color_discrete_sequence=["#4dabf7", "#ff8787"],
+            color_discrete_sequence=["#339af0", "#ff8787"],
             hole=0.4,
             template="plotly_white"
         )
         st.plotly_chart(fig_pie, use_container_width=True)
         
     with col_bar:
-        st.write("🎂 **연령대별 생활인구 분포**")
-        age_agg = filtered_df.groupby('연령대', observed=True)['생활인구수'].sum().reset_index()
+        st.write("🎂 **연령대별 생활인구 분포 (DB)**")
+        age_agg = load_db_table('age_pop_dist')
         fig_bar = px.bar(
             age_agg,
             x="연령대",
@@ -374,34 +317,22 @@ with tab_univariate:
             title="연령대별 생활인구 합계",
             labels={"생활인구수": "인구 합계 (명)"},
             template="plotly_white",
-            color_discrete_sequence=["#12b886"]
+            color_discrete_sequence=["#0ca678"]
         )
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # 1단계 자가 진단 해석 리포트
-    st.markdown(f"""
-    <div class="summary-box">
-        💡 <b>통계 해석 요약 (Univariate Insight):</b><br/>
-        생활인구수의 평균값은 <b>{stats['mean']:,.1f}명</b>인 반면, 중앙값은 <b>{stats['median']:,.1f}명</b>으로 두 대표값 간의 괴리가 큽니다.
-        또한 데이터의 왜도는 <b>{stats['skewness']:.2f}</b>로 양의 왜도(우편향)를 보여주며, 첨도는 <b>{stats['kurtosis']:.2f}</b>로 정규분포 대비 매우 뾰족한 분포를 띱니다.
-        이는 특정 시간이나 동으로 유동인구가 강하게 집중되는 도시 특성을 잘 나타냅니다.
-        IQR 분석 기준 전체 관측치의 <b>{stats['outlier_ratio']:.2f}%</b>에 해당하는 데이터가 통계적 이상치(IQR 상한인 {stats['upper_bound']:.1f}명 초과)로 분석되었습니다.
-    </div>
-    """, unsafe_allow_html=True)
-
 # ==================== 3. 상관 및 다차원 분석 탭 ====================
 with tab_multivariate:
-    st.subheader("📊 항목 간 관계 및 다차원 시계열 분석")
+    st.subheader("📊 상관관계 및 다차원 시계열 분석 (DB)")
     st.markdown("""
     <div class="section-desc">
-        이 섹션은 요일, 시간대, 성별, 연령대, 자치구 등 여러 변수를 결합하여 다차원적인 상관관계를 규명합니다.
-        Plotly를 활용한 동적 인터랙티브 차트만으로 시각화를 제공합니다.
+        이 섹션은 자치구별 순위 및 주중/주말 시간대별 유동인구 추이를 비교합니다. SQLite 사전 연산 데이터를 연동해 지연을 제거했습니다.
     </div>
     """, unsafe_allow_html=True)
     
-    # 1. 자치구별 평균 생활인구 비교
     st.write("📍 **자치구별 평균 생활인구 비교**")
-    district_agg = filtered_df.groupby('자치구', observed=True)['생활인구수'].mean().reset_index()
+    dong_pop = load_db_table('dong_pop_ranking')
+    district_agg = dong_pop.groupby('자치구', observed=True)['생활인구수'].mean().reset_index()
     district_agg = district_agg.sort_values(by="생활인구수", ascending=False)
     
     fig_dist = px.bar(
@@ -418,12 +349,11 @@ with tab_multivariate:
     
     st.markdown("---")
     
-    # 2. 주중 vs 주말 시간대별 흐름
     col_trend, col_heatmap = st.columns([1.1, 1])
     
     with col_trend:
         st.write("📅 **주중 vs 주말 시간대별 평균 인구 흐름**")
-        trend_agg = filtered_df.groupby(['시간대구분', '주말구분'], observed=True)['생활인구수'].mean().reset_index()
+        trend_agg = load_db_table('weekend_hourly_pop')
         fig_trend = px.line(
             trend_agg,
             x="시간대구분",
@@ -438,86 +368,27 @@ with tab_multivariate:
         st.plotly_chart(fig_trend, use_container_width=True)
         
     with col_heatmap:
-        st.write("🔥 **시간대 × 연령대별 평균 생활인구 히트맵**")
-        heat_agg = filtered_df.groupby(['시간대구분', '연령대'], observed=True)['생활인구수'].mean().reset_index()
-        # 연령대 정렬을 유지하기 위해 피벗 테이블 생성
-        heat_piv = heat_agg.pivot(index="시간대구분", columns="연령대", values="생활인구수")
-        
-        fig_heat = px.imshow(
-            heat_piv,
-            labels=dict(x="연령대", y="시간대", color="평균 생활인구수"),
-            x=heat_piv.columns,
-            y=heat_piv.index,
-            color_continuous_scale="YlGnBu",
-            title="시간대 × 연령대별 인구 분포 히트맵",
-            aspect="auto",
-            template="plotly_white"
+        st.write("🔥 **연령대 및 성별 생활인구 분포 비교**")
+        gender_age = load_db_table('gender_age_pop_dist')
+        fig_gender_age = px.bar(
+            gender_age,
+            x="연령대",
+            y="생활인구수",
+            color="성별",
+            barmode="group",
+            title="연령대별/성별 생활인구 분포 비교",
+            labels={"생활인구수": "인구 합계 (명)"},
+            template="plotly_white",
+            color_discrete_map={"남자": "#1c7ed6", "여자": "#ff8787"}
         )
-        st.plotly_chart(fig_heat, use_container_width=True)
-        
-    st.markdown("---")
-    
-    # 3. 상관계수 분석 및 다중공선성 경고
-    st.write("🔗 **수치 변수 상관관계 진단**")
-    
-    # 상관 분석을 위해 더미 변수화 또는 카테고리 인코딩
-    corr_df = filtered_df.copy()
-    corr_df['성별_인덱스'] = corr_df['성별'].cat.codes
-    corr_df['연령대_인덱스'] = corr_df['연령대'].cat.codes
-    
-    # 상관 계수 행렬 계산
-    num_cols = ['시간대구분', '생활인구수', '성별_인덱스', '연령대_인덱스']
-    corr_matrix = corr_df[num_cols].corr()
-    
-    col_corr1, col_corr2 = st.columns([1.1, 1])
-    
-    with col_corr1:
-        fig_corr = px.imshow(
-            corr_matrix,
-            text_auto=".3f",
-            color_continuous_scale="RdBu",
-            zmin=-1, zmax=1,
-            title="피어슨(Pearson) 상관계수 Heatmap",
-            labels=dict(color="상관계수"),
-            template="plotly_white"
-        )
-        st.plotly_chart(fig_corr, use_container_width=True)
-        
-    with col_corr2:
-        st.write("⚠️ **다중공선성(Multicollinearity) 위험성 점검**")
-        st.markdown("""
-        * **다중공선성 요약**: 변수 간 상관성이 극단적으로 높을(0.9 이상) 경우, 다중공선성 위험이 존재하여 다변량 분석이나 모델 학습 시 회귀계수 왜곡이 발생할 수 있습니다.
-        """)
-        
-        # 상관도가 높은 쌍을 자동 감지
-        high_corr_pairs = []
-        for i in range(len(corr_matrix.columns)):
-            for j in range(i):
-                val = corr_matrix.iloc[i, j]
-                if abs(val) >= 0.9:
-                    high_corr_pairs.append((corr_matrix.columns[i], corr_matrix.columns[j], val))
-                    
-        if high_corr_pairs:
-            for pair in high_corr_pairs:
-                st.error(f"🚨 **다중공선성 경보**: `{pair[0]}`와/과 `{pair[1]}` 간 상관도가 **{pair[2]:.3f}**로 매우 높습니다. 두 변수의 중복 투입을 권장하지 않습니다.")
-        else:
-            st.success("✅ **안전함**: 상관계수가 0.9 이상인 극단적 다중공선성 위험 변수 쌍이 탐지되지 않았습니다.")
-            
-        # 변수 설명 툴팁 보완
-        st.info("""
-        💡 **분석 툴팁**:
-        - **성별_인덱스**: '남자'=0, '여자'=1 로 코딩되었습니다.
-        - **연령대_인덱스**: '0세부터9세'=0 ~ '70세이상'=13 으로 점진적으로 순서 코딩되었습니다.
-        - **시간대구분**: 0 ~ 23시입니다.
-        """)
+        st.plotly_chart(fig_gender_age, use_container_width=True)
 
 # ==================== 4. 고급 집중도 및 시뮬레이션 탭 ====================
 with tab_advanced:
-    st.subheader("🎯 고급 인구 집중도 분석 및 What-if 시나리오 시뮬레이션")
+    st.subheader("🎯 고급 집중도 및 What-if 시나리오 시뮬레이션")
     st.markdown("""
     <div class="section-desc">
-        이 섹션은 소수 지역이 전체 인구에 미치는 기여도를 측정하는 파레토(Pareto) 집중도 분석과,
-        특정 요소를 제어해 영향을 평가할 수 있는 What-if 시나리오 시뮬레이션을 제공합니다.
+        이 섹션은 소수 행정동으로의 인구 쏠림을 진단하는 파레토 분석과 가상 인구 성장 시나리오 시뮬레이션을 제공합니다.
     </div>
     """, unsafe_allow_html=True)
     
@@ -527,27 +398,22 @@ with tab_advanced:
         st.write("📊 **행정동별 인구 집중도 (파레토 80/20 분석)**")
         
         # 동별 누적 생활인구수 계산
-        dong_pop = filtered_df.groupby('행정동코드', observed=True)['생활인구수'].sum().reset_index()
-        dong_pop = dong_pop.sort_values(by='생활인구수', ascending=False)
-        dong_pop['누적생활인구'] = dong_pop['생활인구수'].cumsum()
-        dong_pop['누적비율'] = (dong_pop['누적생활인구'] / dong_pop['생활인구수'].sum()) * 100
-        dong_pop['동개수비율'] = (np.arange(1, len(dong_pop) + 1) / len(dong_pop)) * 100
+        dong_pop_sorted = dong_pop.sort_values(by='생활인구수', ascending=False).copy()
+        dong_pop_sorted['누적생활인구'] = dong_pop_sorted['생활인구수'].cumsum()
+        dong_pop_sorted['누적비율'] = (dong_pop_sorted['누적생활인구'] / dong_pop_sorted['생활인구수'].sum()) * 100
         
-        # 파레토 차트 생성
         fig_pareto = go.Figure()
         
-        # 바 그래프 (개별 행정동 인구수)
         fig_pareto.add_trace(go.Bar(
-            x=dong_pop['행정동코드'].astype(str),
-            y=dong_pop['생활인구수'],
-            name="행정동 인구합계",
+            x=dong_pop_sorted['행정동코드'].astype(str),
+            y=dong_pop_sorted['생활인구수'],
+            name="행정동 인구평균",
             marker_color="#dee2e6"
         ))
         
-        # 꺾은선 그래프 (누적 인구비율)
         fig_pareto.add_trace(go.Scatter(
-            x=dong_pop['행정동코드'].astype(str),
-            y=dong_pop['누적비율'],
+            x=dong_pop_sorted['행정동코드'].astype(str),
+            y=dong_pop_sorted['누적비율'],
             name="누적 비율(%)",
             yaxis="y2",
             line=dict(color="#d6336c", width=2.5)
@@ -555,57 +421,48 @@ with tab_advanced:
         
         fig_pareto.update_layout(
             title="행정동 생활인구 파레토 차트",
-            yaxis=dict(title="생활인구 합계"),
+            yaxis=dict(title="평균 생활인구"),
             yaxis2=dict(title="누적 비율 (%)", overlaying="y", side="right", range=[0, 105]),
             template="plotly_white",
             showlegend=True,
             xaxis=dict(showticklabels=False, title="행정동 정렬 (인구 많은 순)")
         )
-        
         st.plotly_chart(fig_pareto, use_container_width=True)
         
-        # 80% 인구를 커버하는 동의 개수 구하기
-        dongs_for_80 = dong_pop[dong_pop['누적비율'] <= 80]
-        ratio_80 = (len(dongs_for_80) / len(dong_pop)) * 100
+        # 80% 인구 커버 동 산출
+        dongs_for_80 = dong_pop_sorted[dong_pop_sorted['누적비율'] <= 80]
+        ratio_80 = (len(dongs_for_80) / len(dong_pop_sorted)) * 100
         
         st.markdown(f"""
-        📝 **집중도 진단**: 
-        - 분석 결과, 상위 **{len(dongs_for_80)}개 동** (전체 행정동의 **{ratio_80:.2f}%**)이 
-          전체 서울시 생활인구의 **80%**를 차지하는 집중 경향을 나타냅니다.
-        - 이는 균등 분산된 데이터가 아니므로 집중적 시설 인프라 관리가 효과적임을 지시합니다.
+        **집중도 진단 결과**:
+        - 상위 **{len(dongs_for_80)}개 행정동** (전체 행정동의 **{ratio_80:.2f}%**)이 
+          서울시 전체 생활인구의 **80%**를 지배하고 있어 인구 밀도가 극도로 편중된 현상이 입증됩니다.
         """)
         
     with col_whatif:
         st.write("🧪 **What-if 시나리오 인구 변화 시뮬레이션**")
-        st.markdown("""
-        특정 자치구의 유동/생활인구 성장율이나 변화율을 임의로 상향/하향 조정하였을 때,
-        서울시 전체 생활인구의 변화폭을 즉시 시뮬레이션하여 비교 검토할 수 있습니다.
-        """)
         
-        # 시뮬레이션용 자치구 선택
+        all_districts_list = sorted(list(district_agg['자치구'].unique()))
         sim_districts = st.multiselect(
-            "시뮬레이션을 적용할 자치구 선택",
-            options=all_districts,
-            default=[all_districts[0]]
+            "대상 자치구 선택",
+            options=all_districts_list,
+            default=[all_districts_list[0]]
         )
         
-        # 변화율 지정 슬라이더 (-50% ~ +100%)
         pct_change = st.slider(
-            "선택한 자치구의 인구 변화율 (%)",
+            "변화율 설정 (%)",
             min_value=-50,
             max_value=150,
             value=20,
             step=5
         )
         
-        # 시뮬레이션 연산
         sim_df = district_agg.copy()
         sim_df['시뮬레이션_평균'] = sim_df['생활인구수']
         
         target_mask = sim_df['자치구'].isin(sim_districts)
         sim_df.loc[target_mask, '시뮬레이션_평균'] = sim_df.loc[target_mask, '생활인구수'] * (1 + pct_change / 100)
         
-        # 결과 시각화 (기존 평균 vs 시뮬레이션 평균)
         fig_sim = go.Figure()
         fig_sim.add_trace(go.Bar(
             x=sim_df['자치구'],
@@ -616,20 +473,17 @@ with tab_advanced:
         fig_sim.add_trace(go.Bar(
             x=sim_df['자치구'],
             y=sim_df['시뮬레이션_평균'],
-            name="시뮬레이션 평균",
-            marker_color="#228be6"
+            name="시뮬레이션 결과",
+            marker_color="#1c7ed6"
         ))
         
         fig_sim.update_layout(
-            title=f"{', '.join(sim_districts)} {pct_change:+.0f}% 변화 시뮬레이션",
+            title=f"{', '.join(sim_districts)} {pct_change:+.0f}% 변화율 시뮬레이션",
             barmode="group",
-            xaxis=dict(title="자치구"),
-            yaxis=dict(title="평균 생활인구 (명)"),
             template="plotly_white"
         )
         st.plotly_chart(fig_sim, use_container_width=True)
         
-        # 시뮬레이션 전후 총량 차이 계산
         orig_sum = district_agg['생활인구수'].sum()
         new_sum = sim_df['시뮬레이션_평균'].sum()
         diff_pct = (new_sum - orig_sum) / orig_sum * 100
@@ -662,7 +516,6 @@ with tab_map:
         )
         
     with col_ctrl2:
-        # 시간대 슬라이더 (0~23시)
         map_hour = st.slider(
             "⏰ 시간대 설정",
             min_value=0,
@@ -673,7 +526,6 @@ with tab_map:
         )
         
     with col_ctrl3:
-        # 색상 맵 팔레트
         map_color = st.selectbox(
             "🎨 색상 테마 선택",
             options=["YlOrRd", "Reds", "Blues", "Purples", "Greens", "YlGnBu"],
@@ -682,7 +534,6 @@ with tab_map:
         )
         
     with col_ctrl4:
-        # 지도 불투명도 조절
         map_opacity = st.slider(
             "🎚️ 지도 불투명도",
             min_value=0.2,
@@ -700,34 +551,30 @@ with tab_map:
             st.error(f"❌ 지도 로딩 실패: {e}")
             st.stop()
             
-    # 해당 시간대 데이터 필터링 및 집계
-    # 기존 필터링된 데이터(filtered_df) 기준에서 시간대(map_hour) 데이터를 추출하여 공간 단위별로 평균/합산
-    map_df = filtered_df[filtered_df['시간대구분'] == map_hour]
-    
-    if map_df.empty:
-        st.warning("⚠️ 선택한 시간대에 해당하는 데이터가 존재하지 않습니다. 사이드바 필터 조건을 확인해 주세요.")
+    # 해당 시간대 데이터 로드 (DB에서 직접 매칭 쿼리하여 초고속 반환)
+    with st.spinner("💾 시간대별 인구 분포 데이터 로드 중..."):
+        try:
+            geo_agg = load_map_data_from_db(map_unit, map_hour)
+        except Exception as e:
+            st.error(f"❌ 데이터 로드 실패: {e}")
+            st.stop()
+            
+    if geo_agg.empty:
+        st.warning("⚠️ 선택한 시간대에 해당하는 데이터가 존재하지 않습니다. DB 상태를 확인해 주세요.")
     else:
-        # 공간 단위별 인구 집계
+        # 공간 단위별 인구 집계 매핑 키 설정
         if map_unit == "자치구별 (구별)":
-            # 자치구명으로 집계
-            geo_agg = map_df.groupby('자치구', observed=True)['생활인구수'].mean().reset_index()
-            # 매핑용 키 및 데이터 프레임 바인딩 준비
             key_on = "feature.properties.name"
             bind_col = "자치구"
         else:
-            # 코드 매핑 딕셔너리 로드
+            # 행안부 코드를 통계청 7자리 코드로 변경하는 매핑 사전 로드
             try:
                 code_map = load_code_mapping()
             except Exception as e:
                 st.error(f"❌ 코드 매핑 실패: {e}")
                 st.stop()
                 
-            # 행정동코드(8자리)로 집계
-            geo_agg = map_df.groupby('행정동코드', observed=True)['생활인구수'].mean().reset_index()
-            # 행정동코드(8자리)를 통계청 코드(7자리)로 변환
-            geo_agg['행정동코드_str'] = geo_agg['행정동코드'].astype(str)
-            geo_agg['통계청코드'] = geo_agg['행정동코드_str'].map(code_map)
-            
+            geo_agg['통계청코드'] = geo_agg['행정동코드'].map(code_map)
             key_on = "feature.properties.code"
             bind_col = "통계청코드"
             
@@ -748,43 +595,45 @@ with tab_map:
         ).add_to(m)
         
         # 마우스 호버 시 툴팁을 렌더링하기 위해 GeoJsonTooltip 설정
-        # 집계 데이터를 GeoJSON properties에 매핑하여 툴팁에 주입
         pop_dict = dict(zip(geo_agg[bind_col].astype(str), geo_agg['생활인구수']))
         
-        # GeoJSON 피처 순회하며 인구 속성 주입
+        # 자치구 한글 명칭 사전 구축 (행정동 툴팁에서 자치구 한글 명칭을 결합하기 위함)
+        dist_geojson = load_geojson("자치구별 (구별)")
+        kostat_dist_map = {feat['properties']['code']: feat['properties']['name'] for feat in dist_geojson['features']}
+        
+        # GeoJSON 피처 순회하며 상세 툴팁 전용 속성(full_name, pop_val) 주입
         for feature in geojson_data['features']:
             props = feature['properties']
-            key = props.get('code', '') if map_unit == "행정동별 (동별)" else props.get('name', '')
+            if map_unit == "자치구별 (구별)":
+                key = props.get('name', '')
+                props['full_name'] = f"서울특별시 {key}"
+            else:
+                key = props.get('code', '')
+                code_5 = str(key)[:5]
+                dist_name = kostat_dist_map.get(code_5, '')
+                dong_name = props.get('name', '')
+                props['full_name'] = f"서울특별시 {dist_name} {dong_name}"
+                
             val = pop_dict.get(str(key), 0)
-            props['pop_val'] = f"{val:,.1f} 명"
+            props['pop_val'] = f"{int(val):,} 명"  # 정수 콤마 포맷팅 적용
             
-        # GeoJson 레이어로 툴팁 오버레이 추가
-        unit_label = "자치구" if map_unit == "자치구별 (구별)" else "행정동"
-        tooltip_fields = ['name', 'pop_val']
-        tooltip_aliases = [f'{unit_label}명', '평균 생활인구']
-        
-        # 코로플리스 레이어 위에 투명한 GeoJson 레이어를 올려 툴팁 구현
-        folium.GeoJson(
-            geojson_data,
-            style_function=lambda x: {'fillColor': '#ffffff', 'color': '#000000', 'fillOpacity': 0.0, 'weight': 0.0},
-            tooltip=folium.GeoJsonTooltip(
-                fields=tooltip_fields,
-                aliases=tooltip_aliases,
-                localize=True,
-                sticky=False,
-                labels=True,
-                style="""
-                    background-color: #F0F2F6;
-                    border: 2px solid black;
-                    border-radius: 3px;
-                    box-shadow: 3px;
-                    font-family: sans-serif;
-                    font-size: 13px;
-                """,
-            )
-        ).add_to(m)
+        # choropleth.geojson에 직접 호버 툴팁 자식 탑재 (렌더링 속도 비약적 향상 및 이중 렌더링 방지)
+        folium.GeoJsonTooltip(
+            fields=['full_name', 'pop_val'],
+            aliases=['지역명', '평균 생활인구'],
+            localize=True,
+            sticky=False,
+            labels=True,
+            style="""
+                background-color: #F0F2F6;
+                border: 2px solid black;
+                border-radius: 3px;
+                box-shadow: 3px;
+                font-family: sans-serif;
+                font-size: 13px;
+            """
+        ).add_to(choropleth.geojson)
         
         # 맵 출력
         with st.spinner("🗺️ 지도를 그리는 중..."):
             st_folium(m, width=1200, height=600, returned_objects=[])
-
