@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기획/전략 직무 미스매치 분석 보고서</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body{ font-family:'Inter',sans-serif;background:#0f172a;color:#f1f5f9; }</style>
+</head>
+<body class="p-8 min-h-screen">
+    <div class="max-w-5xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+        <h1 class="text-3xl font-bold text-white mb-2">기획/전략 직무 미스매치 분석 보고서</h1>
+        <p class="text-slate-400 text-sm mb-6">대상 직무: 전체 기획/전략 | 실제 수집 데이터 기반</p>
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="bg-slate-800 rounded-2xl p-5">
+                <p class="text-slate-400 text-xs uppercase tracking-wider">직무 적합도</p>
+                <p class="text-4xl font-black text-violet-400 mt-1">79.3점</p>
+            </div>
+            <div class="bg-slate-800 rounded-2xl p-5">
+                <p class="text-slate-400 text-xs uppercase tracking-wider">보유 스킬</p>
+                <p class="text-sm font-semibold text-white mt-1">SQLD, ADsP, Figma, GA4, 역기획, 시장조사 및 리서치</p>
+            </div>
+            <div class="bg-slate-800 rounded-2xl p-5">
+                <p class="text-slate-400 text-xs uppercase tracking-wider">우선 보완 스펙</p>
+                <p class="text-sm font-semibold text-amber-400 mt-1">정보처리기사, CFA, CPA</p>
+            </div>
+        </div>
+        <div class="bg-slate-800/30 border border-slate-700 rounded-2xl p-6 mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">스킬 수급 Gap 차트</h2>
+            <div style="height:100%; width:100%;">                        <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.6.0.min.js" integrity="sha256-QaOVwtVY0T02VaHrr6pnoHLCwayMJp4O5n4YyaE3rJk=" crossorigin="anonymous"></script>                <div id="8f5bee9f-ee93-4a2a-9706-0da2bb3b9186" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("8f5bee9f-ee93-4a2a-9706-0da2bb3b9186")) {                    Plotly.newPlot(                        "8f5bee9f-ee93-4a2a-9706-0da2bb3b9186",                        [{"hovertemplate":"스킬: %{x}\u003cbr\u003e구직자 공급: %{y:,.0f}건\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#818cf8"},"name":"구직자 관심도 (네이버 카페\u002f검색 공급)","opacity":0.85,"x":["ADsP","CFA","CPA","Figma","GA4","M&A","PPT작성법","SQLD","데이터분석","시장조사","컴퓨터활용능력"],"y":{"dtype":"i4","bdata":"4C4AAHAXAABQRgAAlBEAAEAfAAAoIwAA8FUAAJg6AAC4iAAAYG0AAMivAAA="},"type":"bar","xaxis":"x","yaxis":"y"},{"hovertemplate":"스킬: %{x}\u003cbr\u003e기업 수요: %{y}건\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#fb7185"},"name":"실제 기업 우대 빈도 (사람인 공고수)","opacity":0.85,"x":["ADsP","CFA","CPA","Figma","GA4","M&A","PPT작성법","SQLD","데이터분석","시장조사","컴퓨터활용능력"],"y":{"dtype":"i2","bdata":"AgACAAcAFAAKAD8AgwABAJkAYQAeAA=="},"type":"bar","xaxis":"x","yaxis":"y2"}],                        {"template":{"data":{"candlestick":[{"decreasing":{"line":{"color":"#000033"}},"increasing":{"line":{"color":"#000032"}},"type":"candlestick"}],"contourcarpet":[{"colorscale":[[0.0,"#000011"],[0.1111111111111111,"#000012"],[0.2222222222222222,"#000013"],[0.3333333333333333,"#000014"],[0.4444444444444444,"#000015"],[0.5555555555555556,"#000016"],[0.6666666666666666,"#000017"],[0.7777777777777778,"#000018"],[0.8888888888888888,"#000019"],[1.0,"#000020"]],"type":"contourcarpet"}],"contour":[{"colorscale":[[0.0,"#000011"],[0.1111111111111111,"#000012"],[0.2222222222222222,"#000013"],[0.3333333333333333,"#000014"],[0.4444444444444444,"#000015"],[0.5555555555555556,"#000016"],[0.6666666666666666,"#000017"],[0.7777777777777778,"#000018"],[0.8888888888888888,"#000019"],[1.0,"#000020"]],"type":"contour"}],"heatmap":[{"colorscale":[[0.0,"#000011"],[0.1111111111111111,"#000012"],[0.2222222222222222,"#000013"],[0.3333333333333333,"#000014"],[0.4444444444444444,"#000015"],[0.5555555555555556,"#000016"],[0.6666666666666666,"#000017"],[0.7777777777777778,"#000018"],[0.8888888888888888,"#000019"],[1.0,"#000020"]],"type":"heatmap"}],"histogram2d":[{"colorscale":[[0.0,"#000011"],[0.1111111111111111,"#000012"],[0.2222222222222222,"#000013"],[0.3333333333333333,"#000014"],[0.4444444444444444,"#000015"],[0.5555555555555556,"#000016"],[0.6666666666666666,"#000017"],[0.7777777777777778,"#000018"],[0.8888888888888888,"#000019"],[1.0,"#000020"]],"type":"histogram2d"}],"icicle":[{"textfont":{"color":"white"},"type":"icicle"}],"sankey":[{"textfont":{"color":"#000036"},"type":"sankey"}],"scatter":[{"marker":{"line":{"width":0}},"type":"scatter"}],"table":[{"cells":{"fill":{"color":"#000038"},"font":{"color":"#000037"},"line":{"color":"#000039"}},"header":{"fill":{"color":"#000040"},"font":{"color":"#000036"},"line":{"color":"#000039"}},"type":"table"}],"waterfall":[{"connector":{"line":{"color":"#000036","width":2}},"decreasing":{"marker":{"color":"#000033"}},"increasing":{"marker":{"color":"#000032"}},"totals":{"marker":{"color":"#000034"}},"type":"waterfall"}]},"layout":{"coloraxis":{"colorscale":[[0.0,"#000011"],[0.1111111111111111,"#000012"],[0.2222222222222222,"#000013"],[0.3333333333333333,"#000014"],[0.4444444444444444,"#000015"],[0.5555555555555556,"#000016"],[0.6666666666666666,"#000017"],[0.7777777777777778,"#000018"],[0.8888888888888888,"#000019"],[1.0,"#000020"]]},"colorscale":{"diverging":[[0.0,"#000021"],[0.1111111111111111,"#000022"],[0.2222222222222222,"#000023"],[0.3333333333333333,"#000024"],[0.4444444444444444,"#000025"],[0.5555555555555556,"#000026"],[0.6666666666666666,"#000027"],[0.7777777777777778,"#000028"],[0.8888888888888888,"#000029"],[1.0,"#000030"]],"sequential":[[0.0,"#000011"],[0.1111111111111111,"#000012"],[0.2222222222222222,"#000013"],[0.3333333333333333,"#000014"],[0.4444444444444444,"#000015"],[0.5555555555555556,"#000016"],[0.6666666666666666,"#000017"],[0.7777777777777778,"#000018"],[0.8888888888888888,"#000019"],[1.0,"#000020"]],"sequentialminus":[[0.0,"#000011"],[0.1111111111111111,"#000012"],[0.2222222222222222,"#000013"],[0.3333333333333333,"#000014"],[0.4444444444444444,"#000015"],[0.5555555555555556,"#000016"],[0.6666666666666666,"#000017"],[0.7777777777777778,"#000018"],[0.8888888888888888,"#000019"],[1.0,"#000020"]]},"colorway":["#000001","#000002","#000003","#000004","#000005","#000006","#000007","#000008","#000009","#000010"]}},"xaxis":{"anchor":"y","domain":[0.0,0.94],"title":{"text":"\u003cb\u003e요구 자격증 및 기획 스킬셋\u003c\u002fb\u003e"},"tickfont":{"color":"#1e293b","size":11},"showgrid":true,"gridcolor":"#e2e8f0"},"yaxis":{"anchor":"x","domain":[0.0,1.0],"title":{"text":"\u003cb\u003e구직자 공급량 (건)\u003c\u002fb\u003e"},"tickfont":{"color":"#3730a3","size":11},"showgrid":true,"gridcolor":"#e2e8f0"},"yaxis2":{"anchor":"x","overlaying":"y","side":"right","title":{"text":"\u003cb\u003e실제 기업 우대 건수 (건)\u003c\u002fb\u003e"},"tickfont":{"color":"#9f1239","size":11},"showgrid":false},"title":{"font":{"size":16,"color":"#0f172a","family":"Inter, sans-serif"},"text":"[전체 기획\u002f전략] 기획 스킬 수급 Gap 비교 분석"},"legend":{"font":{"color":"#1e293b","size":11},"orientation":"h","yanchor":"bottom","y":1.02,"xanchor":"right","x":1},"margin":{"l":50,"r":50,"t":80,"b":50},"barmode":"group","plot_bgcolor":"rgba(255,255,255,0.9)","paper_bgcolor":"rgba(0,0,0,0)"},                        {"responsive": true}                    )                };            </script>        </div>
+        </div>
+        <div class="text-xs text-slate-500 text-center pt-4 border-t border-slate-800">
+            자동 생성된 기획/전략 직무 미스매치 분석 보고서 | 실제 데이터 기반
+        </div>
+    </div>
+</body>
+</html>
