@@ -1,0 +1,9 @@
+- [x] 가상환경 파이썬 버전 변경 (3.14 -> 3.12) 및 패키지 재설치
+- [x] 데이터 스키마 및 기본 통계 파악 스크립트 실행
+- [x] 대시보드 유틸리티 모듈(seoul-pops/src/utils.py) 개발
+- [x] 대시보드 메인 모듈(seoul-pops/src/app.py) 개발
+- [x] Streamlit 로컬 실행 및 작동 검증
+- [x] 최종 결과 보고서/Walkthrough 작성
+- [x] 지도 시각화 기능 기획 및 사용자 승인
+- [x] southkorea-maps GeoJSON 다운로드 및 매핑 연동 개발 (utils.py & app.py)
+- [/] 변경된 대시보드 검증 및 Walkthrough 업데이트
