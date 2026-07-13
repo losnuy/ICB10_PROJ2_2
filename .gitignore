@@ -87,3 +87,7 @@ temp/
 # 11. 대시보드 구동에 필요한 데이터베이스 예외 처리
 !recruit/data/
 !recruit/data/recruit.db
+
+# 12. 중첩 Git 저장소 (별도 GitHub 계정 연동 폴더)
+# jeongyeonlidia/ICB10_project2_consolidated 저장소는 자체 .git으로 독립 관리
+ICB10_project2_consolidated/
