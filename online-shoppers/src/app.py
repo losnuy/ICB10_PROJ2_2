@@ -121,7 +121,8 @@ if df.empty:
 
 # 타이틀 및 대시보드 소개
 st.title("🛍️ 온라인 쇼핑객 구매 의도 분석 대시보드")
-st.markdown("쇼핑객의 세션 행동 데이터를 기반으로 구매 결정(`Revenue`)에 미치는 영향을 탐색합니다.")
+st.markdown("쇼핑객의 세션 행동 데이터를 기반으로 구매 결정(`Revenue`)에 미치는 영향을 탐색합니다. "
+            "의사결정나무(Decision Tree) 기반 머신러닝 예측 및 평가 모델은 사이드바의 **1_Machine_Learning** 페이지에서 확인할 수 있습니다.")
 
 # 3. 핵심 KPI 카드 배치 (상단 영역)
 kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
