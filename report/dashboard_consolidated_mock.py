@@ -407,10 +407,11 @@ st.markdown(
 )
 st.write("---")
 
-tab0, tab1, tab2 = st.tabs([
+tab0, tab1, tab2, tab3 = st.tabs([
     "🏠 홈: 취업 마켓 다차원 EDA 및 기업 건전성 분석",
     "💡 구직자: 스펙 자가진단 및 스코어링",
-    "🏢 인사팀: 수급 Gap 분석 및 JD 최적화"
+    "🏢 인사팀: 수급 Gap 분석 및 JD 최적화",
+    "⚠️ 기업 이직위험 & 채용건전성 분석"
 ])
 
 
