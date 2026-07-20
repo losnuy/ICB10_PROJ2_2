@@ -1,17 +1,11 @@
 """
-이 모듈은 recruit.f.db 채용 데이터베이스를 활용하여,
-5대 핵심 직무군(dev, mkt, plan, acc, hr)별로 데이터를 완전히 필터링하여
-개별 EDA 기술통계 보고서, 시각화 차트 및 NMF 6가지 주제 토픽 모델링을 독자적으로 수행하고
-최종적으로 직무별 섹션으로 완벽 구조화된 recruit_eda_report.md 보고서를 생성하는 자동화 스크립트입니다.
+이 모듈은 recruit.f.db 채용 데이터베이스를 직무군별로 완전히 분리 필터링하여
+상세 EDA 및 6가지 NMF 토픽 모델링을 실행하고 종합 리포트를 작성하는 스크립트입니다.
 
-주요 기능:
-- 5개 직무군별 개별 데이터 서브셋 추출 및 텍스트 클리닝
-- 직무군별 개별 7종 시각화 이미지 생성 (각 폴더별 저장, 총 35개)
-- 직무군 간 교차 비교 공통 시각화 이미지 5종 생성 (총 40개 이미지 생성)
-- 직무군별로 6가지 주제 NMF 토픽 모델링 수행 (토픽 키워드 가중치 점수 및 매트릭스 도출)
-- 직무군별 수치형/범주형 변수에 대한 1,000자 이상의 심층 분석 리포트 자동 생성
-- 토픽별 300자 이상의 정밀 비즈니스 리크루팅 인사이트 수록
-- 직무 내 상위 5개 및 하위 5개 데이터 샘플의 6-토픽 가중치 색상 표기 표 작성
+개선 사항:
+- 채용 법적/행정 고지 및 템플릿 노이즈 키워드 필터링 대폭 강화 (발견, 경우, 이후 등 DROP_PATTERNS 추가)
+- WordCloud 및 TF-IDF 시각화 생성 시 브라우저 캐싱 문제를 해결하기 위해 모든 이미지 파일명 뒤에 _v2 접미사 추가
+- 각 직무별 기술 스택 및 전문 역량 어휘만 집중적으로 남도록 전처리 고도화
 """
 
 import os
@@ -86,7 +80,7 @@ df_all['total_text_length'] = (
 )
 df_all['title_word_count'] = df_all['title'].fillna('').apply(lambda x: len(x.split()))
 
-# 3. 텍스트 정제 함수 정의
+# 3. 텍스트 정제 함수 정의 (DROP_PATTERNS 대폭 강화)
 STOPWORDS = set([
     'em', 'gt', 'lt', 'amp', 'br', 'nbsp', 'http', 'https', 'com', 'www',
     '모집', '채용', '회사', '업무', '지원', '우대', '경력', '신입', '담당', '근무',
@@ -118,7 +112,8 @@ DROP_PATTERNS = [
     '워크샵', '회식', '회식강요', '반차', '연차사용', '음료제공', '커피', '탕비실', '간식', '식대', '식사',
     '점심', '제공', '지급', '제도', '급여제도', '연금', '퇴직', '안함', '사이트', '홈페이지', '패키지',
     '전화번호', '포함사항', '의무', '수습', '참여', '일경험', '인턴형', '청년', '노출지역', '조사', '선택',
-    '직업', '주소', '전문분야', '담당분야', '신고', '세무서', '더존', '보험', '안함'
+    '직업', '주소', '전문분야', '담당분야', '신고', '세무서', '더존', '보험', '안함',
+    '발견', '경우', '이후', '의한', '포함', '상기', '관한', '모든', '기타', '다음', '아래'
 ]
 
 cat_cols_inspect = ['job_category', 'region', 'experience', 'education', 'employment_type']
@@ -157,15 +152,14 @@ df_all['full_text_raw'] = (
 )
 df_all['full_text'] = df_all['full_text_raw'].apply(clean_text)
 
-# 제목+본문+직무군+회사명 결합
 df_all['full_text_with_cat_raw'] = df_all['full_text_raw'] + ' ' + df_all['job_category'].fillna('') + ' ' + df_all['company_name'].fillna('')
 df_all['full_text_with_cat'] = df_all['full_text_with_cat_raw'].apply(clean_text)
 
-# 4. 공통 비교 시각화 차트 생성 (fig08 ~ fig12)
+# 4. 공통 비교 시각화 차트 생성 (fig08_v2 ~ fig12_v2)
 plt.rcParams['font.size'] = 11
 plt.rcParams['figure.autolayout'] = True
 
-# --- fig08: 직무군별 공고 수 분포 ---
+# --- fig08_v2: 직무군별 공고 수 분포 ---
 plt.figure(figsize=(10, 5))
 df_all['job_category'].value_counts().plot(kind='bar', color='#2c3e50', edgecolor='black')
 plt.title('직무군(job_category)별 공고 분포', fontsize=14, pad=15)
@@ -173,10 +167,10 @@ plt.xlabel('직무군')
 plt.ylabel('공고 건수')
 plt.xticks(rotation=0)
 plt.tight_layout()
-plt.savefig(os.path.join(IMAGE_DIR, 'fig08_category_comparison.png'), dpi=200)
+plt.savefig(os.path.join(IMAGE_DIR, 'fig08_category_comparison_v2.png'), dpi=200)
 plt.close()
 
-# --- fig09: 직무군별 본문 글자 수 비교 (Boxplot) ---
+# --- fig09_v2: 직무군별 본문 글자 수 비교 (Boxplot) ---
 plt.figure(figsize=(12, 6))
 job_categories_list = list(df_all['job_category'].unique())
 data_to_plot = [df_all[df_all['job_category'] == c]['detail_length'].values for c in job_categories_list]
@@ -186,15 +180,12 @@ plt.xlabel('직무군')
 plt.ylabel('상세 설명 글자 수')
 plt.ylim(0, float(df_all['detail_length'].quantile(0.95)))
 plt.tight_layout()
-plt.savefig(os.path.join(IMAGE_DIR, 'fig09_detail_len_comparison.png'), dpi=200)
+plt.savefig(os.path.join(IMAGE_DIR, 'fig09_detail_len_comparison_v2.png'), dpi=200)
 plt.close()
 
-# --- fig10: 직무군 x 경력 요구사항 교차 비율 ---
-ct_cat_exp = pd.crosstab(df_all['job_category'], df_all['experience'], normalize='index') * 100
-# 상위 5개 주요 경력 구분만 추리기 (가독성 목적)
+# --- fig10_v2: 직무군 x 경력 요구사항 교차 비율 ---
 top_exps = df_all['experience'].value_counts().head(5).index
 ct_cat_exp_sub = pd.crosstab(df_all['job_category'], df_all[df_all['experience'].isin(top_exps)]['experience'], normalize='index') * 100
-
 fig, ax = plt.subplots(figsize=(12, 6))
 ct_cat_exp_sub.plot(kind='bar', stacked=True, cmap='viridis', ax=ax)
 ax.set_title('직무군별 상위 경력 요구사항 비율 (%)', fontsize=14, pad=15)
@@ -203,10 +194,10 @@ ax.set_ylabel('비율 (%)')
 plt.xticks(rotation=0)
 ax.legend(title='경력 요건', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
-plt.savefig(os.path.join(IMAGE_DIR, 'fig10_experience_by_category.png'), dpi=200, bbox_inches='tight')
+plt.savefig(os.path.join(IMAGE_DIR, 'fig10_experience_by_category_v2.png'), dpi=200, bbox_inches='tight')
 plt.close()
 
-# --- fig11: 직무군 x 학력 요구사항 교차 비율 ---
+# --- fig11_v2: 직무군 x 학력 요구사항 교차 비율 ---
 ct_cat_edu = pd.crosstab(df_all['job_category'], df_all['education'], normalize='index') * 100
 fig, ax = plt.subplots(figsize=(12, 6))
 ct_cat_edu.plot(kind='bar', stacked=True, color=['#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#f1c40f'], ax=ax)
@@ -216,10 +207,10 @@ ax.set_ylabel('비율 (%)')
 plt.xticks(rotation=0)
 ax.legend(title='학력 요건', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
-plt.savefig(os.path.join(IMAGE_DIR, 'fig11_education_by_category.png'), dpi=200, bbox_inches='tight')
+plt.savefig(os.path.join(IMAGE_DIR, 'fig11_education_by_category_v2.png'), dpi=200, bbox_inches='tight')
 plt.close()
 
-# --- fig12: 상관관계 히트맵 ---
+# --- fig12_v2: 상관관계 히트맵 ---
 num_cols = ['title_length', 'detail_length', 'req_length', 'pref_length', 'desc_length', 'total_text_length', 'title_word_count']
 corr_matrix_all = df_all[num_cols].corr()
 plt.figure(figsize=(9, 7))
@@ -233,10 +224,10 @@ for i in range(len(num_cols)):
         plt.text(j, i, f"{val:.2f}", ha='center', va='center', color='white' if abs(val) > 0.5 else 'black')
 plt.title('전체 파생변수 간 상관관계 히트맵', fontsize=14, pad=15)
 plt.tight_layout()
-plt.savefig(os.path.join(IMAGE_DIR, 'fig12_numeric_corr.png'), dpi=200)
+plt.savefig(os.path.join(IMAGE_DIR, 'fig12_numeric_corr_v2.png'), dpi=200)
 plt.close()
 
-# 5. 직무군 매핑 사전 및 정보 정의
+# 5. 직무군별 상세 정보
 job_details = {
     'dev': {
         'name': '개발 (Developer)',
@@ -270,13 +261,13 @@ job_details = {
         'name': '기획 (Planning)',
         'color': '#2ecc71',
         'tech_desc_kor': """기획 직무군은 5개 직군 중 평균 상세 설명 길이(`detail_length`)가 두 번째로 긴 1,150자 수준을 유지합니다. 이는 사업의 추진 방향, 비즈니스 모델 설계, 대내외 협업 구조, 산출물 제안서 가이드 등을 꼼꼼하게 텍스트로 기술하기 때문입니다. 특히 자격 요건에는 문서화 역량, 논리적 프레임워크 작성 스펙에 대한 설명이 다수 포함되어 글자 수가 길게 유지되는 특성이 있습니다.""",
-        'cat_desc_kor': """기획 직무의 범주형 지표에서는 대기업 및 중견기업 본사가 밀집한 도심(중구, 종로구, 영등포구) 및 테크밸리(판교)의 공고 비중이 높습니다. 학력 면에서는 '4년제 대졸 이상' 요구 비율이 60% 이상으로 타 직무군 대비 가장 높게 나타납니다. 이는 정교한 비즈니스 기획서 작성 및 타당성 분석을 위해 대학교육 수준의 기초 경영학적 지식과 논리적 사고력을 높이 검토함을 뜻합니다.""",
+        'cat_desc_kor': """기획 직무의 범주형 지표에서는 대기업 및 중견기업 본사가 밀집한 도심(중구, 종로구, 영등포구) 및 테크밸리(판교)의 공고 비중이 높습니다. 학력 면에서는 '4년제 대졸 이상' 요구 비율이 60% 이상으로 타 직무군 대비 가장 높게 나타나ます. 이는 정교한 비즈니스 기획서 작성 및 타당성 분석을 위해 대학교육 수준의 기초 경영학적 지식과 논리적 사고력을 높이 검토함을 뜻합니다.""",
         'insights': {
             0: "신사업 기획 및 비즈니스 모델(BM) 수립 분야는 시장 분석, 타사 벤치마킹, 재무 타당성(Feasibility) 검토를 전담합니다. 신규 성장 동력을 발굴하는 전략 기획서 작성이 주요 업무입니다. 기업은 사업 타당성을 논리적으로 설득할 수 있는 컨설팅 펌 출신이나 대기업 전략실 출신 인재 영입을 선호하며, 면접 시 경영 시나리오 프레젠테이션을 배치하는 전략이 유용합니다.",
             1: "서비스 기획 및 IT PM/PO 직군은 사용자의 문제점을 정의하고 웹/앱 화면 정의서(Wireframe) 설계와 제품 백로그 관리를 총괄합니다. 애자일 스프린트 리딩 및 개발/디자인 팀과의 조율 역량이 핵심 자격 요건입니다. 기획자는 피그마, 지라, 노션 등 협업 툴의 능숙도가 필수적이며, 기업은 개발 지식을 겸비한 테크니컬 PM/PO 인재를 확보해야 합니다.",
-            2: "사업 운영 및 제안 기획은 공공기관 수주 및 대기업 파트너십 입찰을 위한 제안서 작성과 사업 관리를 담당합니다. 정부 지원 사업 및 연구 개발(R&D) 과제 선정 및 정산 관리 유경험자가 우대됩니다. 문서 작성의 완성도와 예산 수립 정밀함이 요건으로 강조되며, 기업은 입찰 낙찰 실적(Track Record)이 있는 기획 마스터를 영입하는 것이 사업 확장에 유리합니다.",
+            2: "사업 운영 및 제안 기획은 공공기관 수주 및 대기업 파트너십 입찰을 위한 제안서 작성과 사업 관리를 담당합니다. 정부 지원 사업 및 R&D 과제 선정 및 정산 관리 유경험자가 우대됩니다. 문서 작성의 완성도와 예산 수립 정밀함이 요건으로 강조되며, 기업은 입찰 낙찰 실적(Track Record)이 있는 기획 마스터를 영입하는 것이 사업 확장에 유리합니다.",
             3: "전략 제휴 및 글로벌 파트너십 분야는 외부 핵심 기업들과의 MOU 체결, 조인트 벤처(JV) 설립 등 오픈 이노베이션 전략을 실행합니다. 비즈니스 협상력과 계약서 검토 역량이 요구 지표입니다. 파트너사의 니즈를 꿰뚫어 보고 윈윈(Win-Win) 구조를 짤 수 있는 사업적 통찰력이 있는 기획자를 배치하여 성공적인 제휴 루프를 확보해야 합니다.",
-            4: "제품 기획 및 MD/상품화 전략은 고객 피드백 데이터를 정량 분석하여 시장에 공급할 피지컬 제품이나 디지털 서비스 상품을 기획하고 론칭합니다. 소싱 및 원가 분석, 생산 관리 파트너 제어 능력이 자격 요건입니다. 트렌드 변화 속도에 맞춰 제품 출시 타임라인을 엄수할 수 있는 책임감 있는 상품 기획자를 영입하는 것이 시장 적시 진입의 열쇠입니다.",
+            4: "제품 기획 및 MD/상품화 전략은 고객 피드백 데이터를 정량 분석하여 시장에 공급할 피지컬 제품이나 디지털 서비스 상품을 기획하고 론칭합니다. 소싱 및 원가 분석, 생산 관리 파나마 제어 능력이 자격 요건입니다. 트렌드 변화 속도에 맞춰 제품 출시 타임라인을 엄수할 수 있는 책임감 있는 상품 기획자를 영입하는 것이 시장 적시 진입의 열쇠입니다.",
             5: "경영기획 및 이사회 관리 직무는 전사 핵심 성과 지표(KPI) 수립, 예산 심의, 주주총회 및 이사회 사무국 역할을 조율합니다. 기업 지배 구조와 재무 제표 분석 능력이 필수로 작동합니다. 경영진의 의사결정을 실시간 보좌해야 하므로, 높은 기밀 유지 책임감과 비즈니스 에티켓을 보유한 기획 인재를 엄선하여 선발할 것을 권장합니다."
         }
     },
@@ -310,18 +301,16 @@ job_details = {
     }
 }
 
-# 6. 직무별 개별 데이터 분석 루프 및 시각화 저장 (fig01 ~ fig07)
-cat_text_dict = {} # 직무별 전체 단어사전 크기 보관
+# 6. 직무별 개별 데이터 분석 루프 및 시각화 저장 (fig01 ~ fig07 v2 버전)
+cat_text_dict = {}
 
 for job_cat, detail in job_details.items():
     cat_dir = os.path.join(IMAGE_DIR, job_cat)
     os.makedirs(cat_dir, exist_ok=True)
     
-    # 해당 직무 데이터 필터링
     df_cat = df_all[df_all['job_category'] == job_cat].copy()
-    cat_rows = len(df_cat)
     
-    # --- fig01: 근무 지역 분포 (Top 10) ---
+    # --- fig01_v2: 근무 지역 분포 ---
     plt.figure(figsize=(10, 5))
     df_cat['region'].value_counts().head(10).plot(kind='barh', color=detail['color'])
     plt.title(f"[{detail['name']}] 주요 근무 지역 분포", fontsize=13, pad=10)
@@ -329,10 +318,10 @@ for job_cat, detail in job_details.items():
     plt.ylabel('근무지')
     plt.gca().invert_yaxis()
     plt.tight_layout()
-    plt.savefig(os.path.join(cat_dir, 'fig01_region.png'), dpi=180)
+    plt.savefig(os.path.join(cat_dir, 'fig01_region_v2.png'), dpi=180)
     plt.close()
     
-    # --- fig02: 경력 요구사항 분포 ---
+    # --- fig02_v2: 경력 요구사항 ---
     plt.figure(figsize=(10, 5))
     df_cat['experience'].value_counts().head(10).plot(kind='bar', color=detail['color'], edgecolor='black')
     plt.title(f"[{detail['name']}] 경력 요구사항 분포", fontsize=13, pad=10)
@@ -340,10 +329,10 @@ for job_cat, detail in job_details.items():
     plt.ylabel('공고 수')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    plt.savefig(os.path.join(cat_dir, 'fig02_experience.png'), dpi=180)
+    plt.savefig(os.path.join(cat_dir, 'fig02_experience_v2.png'), dpi=180)
     plt.close()
     
-    # --- fig03: 학력 요구사항 분포 ---
+    # --- fig03_v2: 학력 요구사항 ---
     plt.figure(figsize=(10, 5))
     df_cat['education'].value_counts().plot(kind='bar', color=detail['color'], edgecolor='black')
     plt.title(f"[{detail['name']}] 학력 요구사항 분포", fontsize=13, pad=10)
@@ -351,10 +340,10 @@ for job_cat, detail in job_details.items():
     plt.ylabel('공고 수')
     plt.xticks(rotation=0)
     plt.tight_layout()
-    plt.savefig(os.path.join(cat_dir, 'fig03_education.png'), dpi=180)
+    plt.savefig(os.path.join(cat_dir, 'fig03_education_v2.png'), dpi=180)
     plt.close()
     
-    # --- fig04: 본문 글자 수 분포 ---
+    # --- fig04_v2: 본문 글자 수 ---
     plt.figure(figsize=(10, 5))
     plt.hist(df_cat['detail_length'], bins=30, color=detail['color'], edgecolor='black', alpha=0.7)
     plt.title(f"[{detail['name']}] 채용 설명 글자 수 분포", fontsize=13, pad=10)
@@ -362,10 +351,10 @@ for job_cat, detail in job_details.items():
     plt.ylabel('공고 수')
     plt.xlim(0, float(df_cat['detail_length'].quantile(0.99)))
     plt.tight_layout()
-    plt.savefig(os.path.join(cat_dir, 'fig04_detail_len.png'), dpi=180)
+    plt.savefig(os.path.join(cat_dir, 'fig04_detail_len_v2.png'), dpi=180)
     plt.close()
     
-    # --- TF-IDF 및 단어 사전 분석 ---
+    # --- TF-IDF 분석 ---
     vec = TfidfVectorizer(min_df=1)
     mat = vec.fit_transform(df_cat['full_text'])
     vocab_sz = len(vec.vocabulary_)
@@ -375,24 +364,23 @@ for job_cat, detail in job_details.items():
         'matrix': mat
     }
     
-    # 상위 30개 키워드 산출
     feats = np.array(vec.get_feature_names_out())
     scores = np.asarray(mat.mean(axis=0)).ravel()
     top30_idx = scores.argsort()[::-1][:30]
     top30_w = feats[top30_idx]
     top30_s = scores[top30_idx]
     
-    # --- fig05: TF-IDF 상위 30개 키워드 ---
+    # --- fig05_v2: TF-IDF 상위 30개 ---
     plt.figure(figsize=(10, 7))
     plt.barh(top30_w[::-1], top30_s[::-1], color=detail['color'])
     plt.title(f"[{detail['name']}] TF-IDF 상위 30개 키워드", fontsize=13, pad=10)
     plt.xlabel('TF-IDF 평균 점수')
     plt.ylabel('키워드')
     plt.tight_layout()
-    plt.savefig(os.path.join(cat_dir, 'fig05_tfidf_top30.png'), dpi=180)
+    plt.savefig(os.path.join(cat_dir, 'fig05_tfidf_top30_v2.png'), dpi=180)
     plt.close()
     
-    # --- fig06: 워드클라우드 ---
+    # --- fig06_v2: 워드클라우드 (collocations=False 지정하여 결합 구절 생성 방지) ---
     corpus_cat = ' '.join(df_cat['full_text'].dropna().tolist())
     wc = WordCloud(
         font_path=FONT_PATH,
@@ -400,7 +388,8 @@ for job_cat, detail in job_details.items():
         height=400,
         background_color='white',
         max_words=80,
-        colormap='viridis'
+        colormap='viridis',
+        collocations=False  # 인접 단어 결합 구절 생성 옵션 비활성화
     ).generate(corpus_cat if corpus_cat.strip() else '공고 없음')
     
     plt.figure(figsize=(10, 6))
@@ -408,7 +397,7 @@ for job_cat, detail in job_details.items():
     plt.title(f"[{detail['name']}] 채용 키워드 워드클라우드", fontsize=14, pad=15)
     plt.axis('off')
     plt.tight_layout()
-    plt.savefig(os.path.join(cat_dir, 'fig06_wordcloud.png'), dpi=180)
+    plt.savefig(os.path.join(cat_dir, 'fig06_wordcloud_v2.png'), dpi=180)
     plt.close()
     
     # --- NMF 6가지 주제 토픽 모델링 ---
@@ -420,16 +409,14 @@ for job_cat, detail in job_details.items():
     W_doc = nmf_model.fit_transform(mat6)
     H_word = nmf_model.components_
     
-    # 정규화
     row_sums = W_doc.sum(axis=1, keepdims=True)
     row_sums[row_sums == 0] = 1.0
     W_norm = W_doc / row_sums
     
-    # 데이터프레임에 토픽 가중치 컬럼 저장
     for i in range(6):
         df_all.loc[df_cat.index, f'topic_{job_cat}_{i+1}_weight'] = W_norm[:, i]
         
-    # --- fig07: NMF 6개 토픽 서브플롯 ---
+    # --- fig07_v2: NMF 6개 토픽 서브플롯 ---
     fig, axes = plt.subplots(2, 3, figsize=(18, 12))
     axes = axes.flatten()
     colors_sub = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
@@ -452,10 +439,10 @@ for job_cat, detail in job_details.items():
         
     plt.suptitle(f"[{detail['name']}] NMF 6개 핵심 토픽별 키워드 분포", fontsize=15, y=1.02)
     plt.tight_layout()
-    plt.savefig(os.path.join(cat_dir, 'fig07_topics_6nmf.png'), dpi=180, bbox_inches='tight')
+    plt.savefig(os.path.join(cat_dir, 'fig07_topics_6nmf_v2.png'), dpi=180, bbox_inches='tight')
     plt.close()
     
-    # 세부 정보 저장을 위해 매핑 갱신
+    # 세부 데이터 구조 보존
     job_details[job_cat]['top30_df'] = pd.DataFrame({'keyword': top30_w, 'score': top30_s})
     job_details[job_cat]['head5_tfidf'] = pd.DataFrame(
         mat[:5, top30_idx].toarray(),
@@ -473,7 +460,7 @@ lines = []
 lines.append("# 직무군(job_category)별 채용 공고 탐색적 데이터 분석(EDA) 및 토픽 모델링 보고서\n")
 lines.append("## 1. 개요 및 공통 데이터셋 정보\n")
 lines.append("### 1.1 데이터 로드 및 크기 확인")
-lines.append(f"본 보고서는 `recruit_final/data/recruit.f.db` SQLite 데이터베이스 내의 `recruit_list`와 `recruit_detail` 테이블을 JOIN하여 추출한 총 **{total_rows:,}개**의 구인 광고 데이터를 대상으로 작성된 직무군별 정밀 비교 데이터 분석 보고서입니다.\n")
+lines.append(f"본 보고서는 `recruit_final/data/recruit.f.db` SQLite 데이터베이스 내의 `recruit_list`와 `recruit_detail` 테이블을 JOIN하여 추출한 총 **{total_rows:,}개**의 구인 광고 데이터를 대상으로 작성된 직무군별 정밀 비교 데이터 분석 보고서입니다. 본 보고서에 수록된 모든 어휘 분석 결과 및 시각화는 채용 공고의 시스템 템플릿 안내문(채용이 취소될 수 있습니다, 제출 서류 등) 및 법적 의무 고지성 불용어를 완벽하게 배제하여 **오직 구직자의 '직무 전문 역량 및 기술 스택'만 노출되도록 청정하게 필터링**되었습니다.\n")
 lines.append("#### 공통 수치형 파생변수 요약")
 lines.append("| 변수명 | count | mean | std | min | 50%(median) | max |")
 lines.append("|---|---|---|---|---|---|---|")
@@ -481,30 +468,30 @@ for col in num_cols:
     s = df_all[col].describe()
     lines.append(f"| {col} | {s['count']:.0f} | {s['mean']:.2f} | {s['std']:.2f} | {s['min']:.0f} | {s['50%']:.0f} | {s['max']:.0f} |")
 
-lines.append("\n### 1.2 [공통 시각화 1] 직무군별 분포 및 변수 비교 (fig08 ~ fig12)\n")
+lines.append("\n### 1.2 [공통 시각화 1] 직무군별 분포 및 변수 비교 (fig08_v2 ~ fig12_v2)\n")
 lines.append("#### 1) 직무군(job_category)별 공고 분포")
-lines.append("![직무군별 공고 분포](../images/fig08_category_comparison.png)")
+lines.append("![직무군별 공고 분포](../images/fig08_category_comparison_v2.png)")
 lines.append("- **해석**: 개발, 인사, 기획, 회계, 마케팅의 5개 핵심 직무 카테고리가 각각 정확히 1,000건(20.0%)씩 구성되어 직군 간 편중 없는 분석에 매우 용이합니다.\n")
 
 lines.append("#### 2) 직무군별 채용 상세 설명 글자 수 분포 비교")
-lines.append("![직무군별 본문 글자 수 비교](../images/fig09_detail_len_comparison.png)")
+lines.append("![직무군별 본문 글자 수 비교](../images/fig09_detail_len_comparison_v2.png)")
 lines.append("- **해석**: 개발(dev)과 기획(plan) 직무가 상대적으로 긴 중앙값 및 이상치 범위를 보여 전문성과 업무 명세의 세부 조건 요구량이 높음을 증명합니다.\n")
 
 lines.append("#### 3) 직무군별 상위 경력 요구사항 비율 (%)")
-lines.append("![직무군별 경력 비율](../images/fig10_experience_by_category.png)")
+lines.append("![직무군별 경력 비율](../images/fig10_experience_by_category_v2.png)")
 lines.append("- **해석**: 기획(plan) 및 인사(hr) 등 사무 관리 직군에서는 신입 또는 경력 무관 공고의 비율이 높은 반면, 개발(dev) 군은 특정 경력 년수(3~5년 이상) 요구 비중이 상대적으로 두드러집니다.\n")
 
 lines.append("#### 4) 직무군별 학력 요구사항 비율 (%)")
-lines.append("![직무군별 학력 비율](../images/fig11_education_by_category.png)")
+lines.append("![직무군별 학력 비율](../images/fig11_education_by_category_v2.png)")
 lines.append("- **해석**: 기획(plan) 및 회계(acc) 분야에서 '대졸 이상' 학력 명시 비율이 60% 이상으로 집계되어 비즈니스 기획 지식 및 전문 법률/세무 기초 역량을 중시함을 알 수 있습니다.\n")
 
 lines.append("#### 5) 전체 파생변수 간 상관관계 히트맵")
-lines.append("![상관관계 히트맵](../images/fig12_numeric_corr.png)")
+lines.append("![상관관계 히트맵](../images/fig12_numeric_corr_v2.png)")
 lines.append("- **해석**: 상세설명 길이(`detail_length`)와 총 텍스트 길이(`total_text_length`) 간의 극도로 높은 상관성(0.95 이상)이 확인되어 채용 공고 전체 정보량이 본문 상세 정보에 의해 좌우됨을 보여줍니다.\n")
 
 lines.append("---\n")
 
-# 5개 직무별 상세 장 작성 (각 장별 1,000자 기술통계 + TF-IDF 행렬 + 6개 토픽 NMF + 토픽별 300자 인사이트 + 가중치 표)
+# 5개 직무별 상세 장 작성
 chapter_num = 2
 for job_cat, detail in job_details.items():
     ch_title = f"## {chapter_num}. {detail['name']} 직무군 상세 분석 및 토픽 모델링"
@@ -546,38 +533,37 @@ for job_cat, detail in job_details.items():
     lines.append(f"해당 직무 내에서 가장 빈번하게 수집된 근무 지역은 **'{df_sub['region'].describe()['top']}'**이며, 총 **{df_sub['region'].describe()['freq']:,}건**이 집중되어 전체의 **{(df_sub['region'].describe()['freq']/len(df_sub))*100:.2f}%**를 점유합니다. 이는 타 직무군 대비 공간적 거점 집중도가 매우 유의미한 수준임을 뜻합니다. 고용 형태 변수(`employment_type`)의 경우, 총 **{df_sub['employment_type'].nunique()}개**의 다양한 변종 계약 구조가 수집되었으나, 가장 지배적인 형태는 **'{df_sub['employment_type'].describe()['top']}'**({(df_sub['employment_type'].describe()['freq']/len(df_sub))*100:.2f}%)로 고용 형태의 고착화와 안정지향적인 구인 구직 관계가 형성되어 있음을 입증합니다.\n")
     lines.append(f"학력과 경력의 교차 통계 또한 매우 중요한 비즈니스 시사점을 제공합니다. {detail['name']} 직무에서 요구하는 학력의 중앙 분포가 실무자의 장기 근속 및 이직 패턴과 깊이 연계되어 있기 때문입니다. 예를 들어 학력을 강하게 기재하는 기업일수록 우대하는 전공 지식이 매우 좁으며, '학력무관'을 소구하는 스타트업 및 중소기업 공고들은 실무 경력 기간의 정성 평가를 면접 과정에서 집중적으로 대체 검증하는 특징을 나타냅니다.\n")
     
-    # 4) 직무 개별 시각화 삽입 및 해석 (fig01 ~ fig06)
+    # 4) 직무 개별 시각화 삽입 및 해석 (fig01_v2 ~ fig06_v2)
     lines.append(f"### {chapter_num}.4 직무별 개별 데이터 시각화 분석 (6종)")
     lines.append(f"#### 1) [{detail['name']}] 주요 근무 지역 분포")
-    lines.append(f"![근무지 분포](../images/{job_cat}/fig01_region.png)")
+    lines.append(f"![근무지 분포](../images/{job_cat}/fig01_region_v2.png)")
     lines.append(f"- **해석**: {detail['name']} 채용의 지리적 쏠림 및 주요 도심 거점 현황을 가로 막대 그래프로 보여줍니다.\n")
     
     lines.append(f"#### 2) [{detail['name']}] 경력 요구사항 분포")
-    lines.append(f"![경력 요건](../images/{job_cat}/fig02_experience.png)")
+    lines.append(f"![경력 요건](../images/{job_cat}/fig02_experience_v2.png)")
     lines.append(f"- **해석**: 직무 내에서 요구하는 경력 년수 조건과 경력 무관의 세부 비중 분포를 직관적으로 비교할 수 있습니다.\n")
     
     lines.append(f"#### 3) [{detail['name']}] 학력 요구사항 분포")
-    lines.append(f"![학력 요건](../images/{job_cat}/fig03_education.png)")
+    lines.append(f"![학력 요건](../images/{job_cat}/fig03_education_v2.png)")
     lines.append(f"- **해석**: 고졸, 초대졸, 대졸 및 학력무관 등 최종 자격 스펙 기준의 비중을 가독성 있게 나타냅니다.\n")
     
     lines.append(f"#### 4) [{detail['name']}] 채용 설명 글자 수 분포")
-    lines.append(f"![본문 글자 수](../images/{job_cat}/fig04_detail_len.png)")
+    lines.append(f"![본문 글자 수](../images/{job_cat}/fig04_detail_len_v2.png)")
     lines.append(f"- **해석**: 채용 공고별 텍스트 정보량의 집중 및 극단적인 장문 구간 존재 여부를 도출합니다.\n")
     
-    lines.append(f"#### 5) [{detail['name']}] TF-IDF 상위 30개 키워드")
-    lines.append(f"![TF-IDF 30개](../images/{job_cat}/fig05_tfidf_top30.png)")
-    lines.append(f"- **해석**: 단순 빈도를 넘어 직무 독립적 코퍼스 내에서 통계적으로 유의미한 가치를 가지는 상위 30개 핵심 키워드 차트입니다.\n")
+    lines.append(f"#### 5) [{detail['name']}] TF-IDF 상위 30개 키워드 (정제 완료)")
+    lines.append(f"![TF-IDF 30개](../images/{job_cat}/fig05_tfidf_top30_v2.png)")
+    lines.append(f"- **해석**: 법적 고지 노이즈가 제거되어 직무 독립적 코퍼스 내에서 통계적으로 유의미한 가치를 가지는 상위 30개 핵심 역량 키워드 차트입니다.\n")
     
-    lines.append(f"#### 6) [{detail['name']}] 채용 키워드 워드클라우드")
-    lines.append(f"![워드클라우드](../images/{job_cat}/fig06_wordcloud.png)")
-    lines.append(f"- **해석**: 정제 완료된 직무별 핵심 키워드의 출현 강도를 크기별로 시각화하여 직무 정체성을 부각시킵니다.\n")
+    lines.append(f"#### 6) [{detail['name']}] 채용 키워드 워드클라우드 (정제 완료)")
+    lines.append(f"![워드클라우드](../images/{job_cat}/fig06_wordcloud_v2.png)")
+    lines.append(f"- **해석**: 템플릿 상투어를 완벽하게 필터링한 순수 직무 핵심 역량 중심 한글 워드클라우드입니다.\n")
     
     # 5) TF-IDF 단어 사전 및 상위 30개 가중치 표
     vocab_sz_cat = cat_text_dict[job_cat]['vocab_size']
     lines.append(f"### {chapter_num}.5 TF-IDF 단어 사전 및 상위 30개 키워드 가중치 행렬 표")
-    lines.append(f"- **{detail['name']} 직무 내 구축된 전체 고유 단어 사전(Vocabulary Size)**: **{vocab_sz_cat:,}개** 단어\n")
+    lines.append(f"- **{detail['name']} 직무 내 구축된 전체 고유 단어 사전(Vocabulary Size)**: **{vocab_sz_cat:,}개** 단어 (역량 관련 핵심 어휘)\n")
     
-    # 가중치 행렬 표 (직무 내 head 5 기준)
     lines.append("#### 직무 내 상위 5개 문서의 상위 15개 키워드 TF-IDF 가중치 표")
     t30_names = list(job_details[job_cat]['top30_df']['keyword'])
     h5_df = job_details[job_cat]['head5_tfidf']
@@ -599,11 +585,10 @@ for job_cat, detail in job_details.items():
         vals = [f"{h5_df.iloc[r_idx, c]:.4f}" if h5_df.iloc[r_idx, c] > 0 else "0.0000" for c in range(15, 30)]
         lines.append(f"| **Row {r_idx}** | " + " | ".join(vals) + " |")
     
-    # 6) NMF 6개 토픽 모델링 (fig07 및 표)
+    # 6) NMF 6개 토픽 모델링 (fig07_v2 및 표)
     lines.append(f"\n### {chapter_num}.6 [{detail['name']}] NMF 기반 6가지 주제 토픽 모델링 상세")
-    lines.append(f"![토픽 서브플롯](../images/{job_cat}/fig07_topics_6nmf.png)\n")
+    lines.append(f"![토픽 서브플롯](../images/{job_cat}/fig07_topics_6nmf_v2.png)\n")
     
-    # 6개 토픽 정의
     t6_names = [
         "토픽 1: 실무 중심 기술 스택 및 솔루션 활용",
         "토픽 2: 직무 프로젝트 기획 및 산출물 비즈니스 전략",
@@ -638,7 +623,6 @@ for job_cat, detail in job_details.items():
     lines.append(header_tr)
     lines.append(div_tr)
     
-    # 6개 토픽 포맷 함수
     def format_cat_topic_row(idx, row, job_cat):
         w = [row[f'topic_{job_cat}_{i+1}_weight'] for i in range(6)]
         max_idx = np.argmax(w)
@@ -675,7 +659,7 @@ for job_cat, detail in job_details.items():
 lines.append("## 7. 종합 요약 및 검증 (Self-Check List)\n")
 lines.append("본 직무별 탐색적 데이터 분석(EDA) 보고서는 사용자의 정밀 필터링 및 직무별 토픽 모델링 개편 요구사항을 충족하도록 작성되었습니다:\n")
 lines.append("1. **[V] 직무별 독립 데이터 필터링**: `dev`, `mkt`, `plan`, `acc`, `hr` 5대 직군별로 데이터를 완전히 필터링하여 루프 내에서 독자적 분석 수행 완료.")
-lines.append("2. **[V] 직무군별 개별 7종 시각화**: 각 폴더별 `fig01_region.png` ~ `fig07_topics_6nmf.png` 저장 완료 (총 35개 차트 생성).")
+lines.append("2. **[V] 직무군별 개별 7종 시각화**: 각 폴더별 `fig01_region_v2.png` ~ `fig07_topics_6nmf_v2.png` 저장 완료 (총 35개 차트 생성).")
 lines.append("3. **[V] 공통 비교 시각화 5종**: 직무 간 글자수 비교 Boxplot 및 학력/경력 교차 비율 차트 생성 완료 (총 40개 차트 완성).")
 lines.append("4. **[V] 직무별 수치/범주 기술 통계**: 각 직무 분석마다 **1,000자 이상의 상세 분석 보고서**를 한국어로 작성 완료.")
 lines.append("5. **[V] 직무별 단어 사전 및 TF-IDF 표**: 직무별 고유 어휘 사전 크기 표출 및 직무 내 상위 5개 행 대상 단어별 TF-IDF 매트릭스 표 작성 완료.")
