@@ -1,0 +1,1404 @@
+{
+  "cleanup_summary": {
+    "total_announcements_analyzed": 5000,
+    "total_sentences_analyzed": 43561,
+    "cross_contamination_sentences_filtered_and_reallocated": 7534,
+    "low_df_outliers_filtered": 159
+  },
+  "results": {
+    "dev": {
+      "job_category": "dev",
+      "keyword_groups": [
+        {
+          "type": "skills",
+          "representative_keyword": "JavaScript",
+          "search_group": [
+            "자바스크립트",
+            "JavaScript",
+            "js",
+            "javascript"
+          ],
+          "frequency_score": 1963.93
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "API",
+          "search_group": [
+            "api",
+            "API"
+          ],
+          "frequency_score": 1879.43
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Spring",
+          "search_group": [
+            "스프링",
+            "spring",
+            "스프링부트",
+            "Spring",
+            "springboot"
+          ],
+          "frequency_score": 1531.45
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Java",
+          "search_group": [
+            "java",
+            "Java",
+            "자바"
+          ],
+          "frequency_score": 1422.41
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "React",
+          "search_group": [
+            "리액트",
+            "React",
+            "react",
+            "reactjs",
+            "react.js"
+          ],
+          "frequency_score": 1316.6
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Python",
+          "search_group": [
+            "python3",
+            "Python",
+            "python",
+            "파이썬"
+          ],
+          "frequency_score": 1232.38
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Git",
+          "search_group": [
+            "git",
+            "github",
+            "깃",
+            "깃허브",
+            "Git"
+          ],
+          "frequency_score": 1198.78
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "AWS",
+          "search_group": [
+            "amazonwebservice",
+            "아마존웹서비스",
+            "AWS",
+            "amazon web service",
+            "aws",
+            "아마존 웹 서비스"
+          ],
+          "frequency_score": 1122.78
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Docker",
+          "search_group": [
+            "도커",
+            "Docker",
+            "docker"
+          ],
+          "frequency_score": 913.77
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "LLM",
+          "search_group": [
+            "LLM",
+            "llm"
+          ],
+          "frequency_score": 804.39
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Boot",
+          "search_group": [
+            "boot",
+            "Boot"
+          ],
+          "frequency_score": 759.86
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Linux",
+          "search_group": [
+            "Linux",
+            "linux"
+          ],
+          "frequency_score": 698.86
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Kubernetes",
+          "search_group": [
+            "k8s",
+            "Kubernetes",
+            "kubernetes",
+            "쿠버네티스"
+          ],
+          "frequency_score": 657.96
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Node.js",
+          "search_group": [
+            "node",
+            "nodejs",
+            "노드제이에스",
+            "node.js",
+            "Node.js"
+          ],
+          "frequency_score": 652.17
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "REST",
+          "search_group": [
+            "rest",
+            "REST"
+          ],
+          "frequency_score": 638.51
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Claude",
+          "search_group": [
+            "Claude",
+            "claude"
+          ],
+          "frequency_score": 607.21
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Next",
+          "search_group": [
+            "next",
+            "Next"
+          ],
+          "frequency_score": 600.99
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "RDBMS",
+          "search_group": [
+            "rdbms",
+            "RDBMS"
+          ],
+          "frequency_score": 576.7
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "TypeScript",
+          "search_group": [
+            "타입스크립트",
+            "TypeScript",
+            "typescript",
+            "ts"
+          ],
+          "frequency_score": 565.75
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Code",
+          "search_group": [
+            "code",
+            "Code"
+          ],
+          "frequency_score": 522.58
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "정보보안기사",
+          "search_group": [
+            "정보보안기사",
+            "정보기사"
+          ],
+          "frequency_score": 50.58
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "영어회화",
+          "search_group": [
+            "영어회화",
+            "비즈니스회화",
+            "비즈니스 회화",
+            "영어 능통",
+            "비즈니스 영어",
+            "비즈니스영어",
+            "영어 가능",
+            "영어 회화",
+            "영어커뮤니케이션",
+            "영어 커뮤니케이션",
+            "영어가능",
+            "영어회화 가능",
+            "영어능통",
+            "영어회화가능"
+          ],
+          "frequency_score": 47.32
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "일본어",
+          "search_group": [
+            "일본어가능",
+            "jlptn1",
+            "jlpt n1",
+            "일본어",
+            "jlptn2",
+            "일본어회화",
+            "jlpt n2",
+            "일본어 가능",
+            "jlpt",
+            "일본어 회화",
+            "jpt"
+          ],
+          "frequency_score": 44.7
+        }
+      ]
+    },
+    "mkt": {
+      "job_category": "mkt",
+      "keyword_groups": [
+        {
+          "type": "skills",
+          "representative_keyword": "SNS 마케팅",
+          "search_group": [
+            "SNS 마케팅",
+            "유튜브",
+            "sns",
+            "인스타그램",
+            "블로그",
+            "페이스북"
+          ],
+          "frequency_score": 1930.71
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Photoshop",
+          "search_group": [
+            "포토샵",
+            "Photoshop",
+            "일러스트",
+            "photoshop",
+            "illustrator"
+          ],
+          "frequency_score": 1122.66
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "콘텐츠 기획",
+          "search_group": [
+            "영상편집",
+            "콘텐츠 제작",
+            "콘텐츠기획",
+            "콘텐츠제작",
+            "영상 편집",
+            "콘텐츠 기획",
+            "카드뉴스"
+          ],
+          "frequency_score": 687.42
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "CRM 마케팅",
+          "search_group": [
+            "고객 관계 관리",
+            "CRM 마케팅",
+            "고객관계관리",
+            "crm"
+          ],
+          "frequency_score": 527.02
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "퍼포먼스 마케팅",
+          "search_group": [
+            "퍼포먼스 마케팅",
+            "roas",
+            "광고 효율",
+            "퍼포먼스마케팅",
+            "광고효율"
+          ],
+          "frequency_score": 518.94
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Google",
+          "search_group": [
+            "google",
+            "Google"
+          ],
+          "frequency_score": 364.42
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Meta",
+          "search_group": [
+            "meta",
+            "Meta"
+          ],
+          "frequency_score": 340.99
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Adobe",
+          "search_group": [
+            "adobe",
+            "Adobe"
+          ],
+          "frequency_score": 249.56
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "IMC",
+          "search_group": [
+            "IMC",
+            "imc"
+          ],
+          "frequency_score": 236.77
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "카피라이팅",
+          "search_group": [
+            "문구작성",
+            "카피라이팅",
+            "문구 작성",
+            "글쓰기"
+          ],
+          "frequency_score": 221.48
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "GA4",
+          "search_group": [
+            "ga4",
+            "GA4"
+          ],
+          "frequency_score": 220.18
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "SEO",
+          "search_group": [
+            "검색엔진최적화",
+            "검색엔진 최적화",
+            "seo",
+            "SEO"
+          ],
+          "frequency_score": 214.64
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Google Analytics",
+          "search_group": [
+            "ga",
+            "gaiq",
+            "Google Analytics",
+            "구글 애널리틱스",
+            "googleanalytics",
+            "구글애널리틱스",
+            "google analytics"
+          ],
+          "frequency_score": 171.25
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "B2C",
+          "search_group": [
+            "B2C",
+            "b2c"
+          ],
+          "frequency_score": 128.22
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Excel",
+          "search_group": [
+            "Excel",
+            "excel"
+          ],
+          "frequency_score": 124.04
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Web",
+          "search_group": [
+            "web",
+            "Web"
+          ],
+          "frequency_score": 52.23
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "중국어",
+          "search_group": [
+            "중국어 가능",
+            "중국어 회화",
+            "hsk 5급",
+            "hsk6급",
+            "중국어가능",
+            "hsk5급",
+            "hsk",
+            "중국어",
+            "중국어회화",
+            "hsk 6급"
+          ],
+          "frequency_score": 275.75
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "일본어",
+          "search_group": [
+            "일본어가능",
+            "jlptn1",
+            "jlpt n1",
+            "일본어",
+            "jlptn2",
+            "일본어회화",
+            "jlpt n2",
+            "일본어 가능",
+            "jlpt",
+            "일본어 회화",
+            "jpt"
+          ],
+          "frequency_score": 232.9
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "영어회화",
+          "search_group": [
+            "영어회화",
+            "비즈니스회화",
+            "비즈니스 회화",
+            "영어 능통",
+            "비즈니스 영어",
+            "비즈니스영어",
+            "영어 가능",
+            "영어 회화",
+            "영어커뮤니케이션",
+            "영어 커뮤니케이션",
+            "영어가능",
+            "영어회화 가능",
+            "영어능통",
+            "영어회화가능"
+          ],
+          "frequency_score": 221.57
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "컴퓨터활용능력",
+          "search_group": [
+            "컴활 1급",
+            "컴활",
+            "컴활2급",
+            "컴활 2급",
+            "컴퓨터활용능력",
+            "컴활1급"
+          ],
+          "frequency_score": 127.68
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "검색광고마케터",
+          "search_group": [
+            "검색광고마케터",
+            "검색광고 마케터"
+          ],
+          "frequency_score": 116.03
+        }
+      ]
+    },
+    "plan": {
+      "job_category": "plan",
+      "keyword_groups": [
+        {
+          "type": "skills",
+          "representative_keyword": "프로젝트 관리",
+          "search_group": [
+            "pm",
+            "pmo",
+            "프로젝트 관리",
+            "프로젝트관리"
+          ],
+          "frequency_score": 987.63
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "서비스 기획",
+          "search_group": [
+            "와이어프레임",
+            "화면설계",
+            "서비스 기획",
+            "서비스기획",
+            "화면 설계",
+            "storyboard"
+          ],
+          "frequency_score": 482.94
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Excel",
+          "search_group": [
+            "Excel",
+            "엑셀",
+            "excel"
+          ],
+          "frequency_score": 473.35
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "PPT",
+          "search_group": [
+            "PPT",
+            "ppt",
+            "powerpoint",
+            "파워포인트"
+          ],
+          "frequency_score": 435.64
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "SaaS",
+          "search_group": [
+            "SaaS",
+            "saas"
+          ],
+          "frequency_score": 268.59
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "CDMO",
+          "search_group": [
+            "cdmo",
+            "CDMO"
+          ],
+          "frequency_score": 206.34
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "UX UI",
+          "search_group": [
+            "ui",
+            "ux",
+            "사용자경험",
+            "사용자 경험",
+            "UX UI"
+          ],
+          "frequency_score": 167.07
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "WBS 작성",
+          "search_group": [
+            "wbs",
+            "WBS 작성",
+            "일정관리",
+            "일정 관리"
+          ],
+          "frequency_score": 156.44
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Jira",
+          "search_group": [
+            "jira",
+            "confluence",
+            "Jira",
+            "지라",
+            "컨플루언스"
+          ],
+          "frequency_score": 135.44
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "OEM",
+          "search_group": [
+            "oem",
+            "OEM"
+          ],
+          "frequency_score": 128.44
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "MES",
+          "search_group": [
+            "mes",
+            "MES"
+          ],
+          "frequency_score": 121.64
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "CAD",
+          "search_group": [
+            "CAD",
+            "cad"
+          ],
+          "frequency_score": 103.92
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Gemini",
+          "search_group": [
+            "Gemini",
+            "gemini"
+          ],
+          "frequency_score": 90.34
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "CRM",
+          "search_group": [
+            "CRM",
+            "crm"
+          ],
+          "frequency_score": 89.92
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "TOEIC",
+          "search_group": [
+            "TOEIC",
+            "toeic"
+          ],
+          "frequency_score": 73.0
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "IoT",
+          "search_group": [
+            "iot",
+            "IoT"
+          ],
+          "frequency_score": 71.55
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "SNS",
+          "search_group": [
+            "sns",
+            "SNS"
+          ],
+          "frequency_score": 64.21
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Web",
+          "search_group": [
+            "web",
+            "Web"
+          ],
+          "frequency_score": 60.94
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "영어회화",
+          "search_group": [
+            "영어회화",
+            "비즈니스회화",
+            "비즈니스 회화",
+            "영어 능통",
+            "비즈니스 영어",
+            "비즈니스영어",
+            "영어 가능",
+            "영어 회화",
+            "영어커뮤니케이션",
+            "영어 커뮤니케이션",
+            "영어가능",
+            "영어회화 가능",
+            "영어능통",
+            "영어회화가능"
+          ],
+          "frequency_score": 225.87
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "중국어",
+          "search_group": [
+            "중국어 가능",
+            "중국어 회화",
+            "hsk 5급",
+            "hsk6급",
+            "중국어가능",
+            "hsk5급",
+            "hsk",
+            "중국어",
+            "중국어회화",
+            "hsk 6급"
+          ],
+          "frequency_score": 208.55
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "일본어",
+          "search_group": [
+            "일본어가능",
+            "jlptn1",
+            "jlpt n1",
+            "일본어",
+            "jlptn2",
+            "일본어회화",
+            "jlpt n2",
+            "일본어 가능",
+            "jlpt",
+            "일본어 회화",
+            "jpt"
+          ],
+          "frequency_score": 162.32
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "PMP",
+          "search_group": [
+            "project management professional",
+            "PMP",
+            "projectmanagementprofessional",
+            "pmp"
+          ],
+          "frequency_score": 149.1
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "컴퓨터활용능력",
+          "search_group": [
+            "컴활 1급",
+            "컴활",
+            "컴활2급",
+            "컴활 2급",
+            "컴퓨터활용능력",
+            "컴활1급"
+          ],
+          "frequency_score": 117.55
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "TOEIC",
+          "search_group": [
+            "TOEIC",
+            "토익",
+            "toeic"
+          ],
+          "frequency_score": 97.33
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "TOEIC Speaking",
+          "search_group": [
+            "toeicspeaking",
+            "toeic스피킹",
+            "토익 스피킹",
+            "TOEIC Speaking",
+            "토스",
+            "토익스피킹",
+            "toeic speaking"
+          ],
+          "frequency_score": 60.22
+        }
+      ]
+    },
+    "hr": {
+      "job_category": "hr",
+      "keyword_groups": [
+        {
+          "type": "skills",
+          "representative_keyword": "Payroll",
+          "search_group": [
+            "4대보험",
+            "원천세",
+            "4대 보험",
+            "Payroll",
+            "급여",
+            "payroll"
+          ],
+          "frequency_score": 30512.67
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "채용",
+          "search_group": [
+            "인재영입",
+            "리크루팅",
+            "채용",
+            "인재 영입",
+            "면접"
+          ],
+          "frequency_score": 18167.6
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "근로기준법",
+          "search_group": [
+            "노사 관계",
+            "노무",
+            "근로기준법",
+            "노사관계"
+          ],
+          "frequency_score": 2913.81
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "HRD",
+          "search_group": [
+            "인재개발",
+            "사내 교육",
+            "HRD",
+            "교육기획",
+            "교육 기획",
+            "hrd",
+            "사내교육"
+          ],
+          "frequency_score": 2255.0
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Excel",
+          "search_group": [
+            "Excel",
+            "엑셀",
+            "excel"
+          ],
+          "frequency_score": 1144.88
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "조직문화",
+          "search_group": [
+            "사내 커뮤니케이션",
+            "조직 활성화",
+            "조직문화",
+            "사내커뮤니케이션",
+            "조직활성화"
+          ],
+          "frequency_score": 1142.48
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "OJT",
+          "search_group": [
+            "OJT",
+            "ojt"
+          ],
+          "frequency_score": 1124.52
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "HRM",
+          "search_group": [
+            "hrm",
+            "HRM",
+            "인사기획",
+            "인사관리",
+            "인사 기획"
+          ],
+          "frequency_score": 797.21
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "ERP",
+          "search_group": [
+            "ERP",
+            "erp"
+          ],
+          "frequency_score": 641.98
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "인사평가",
+          "search_group": [
+            "mbo",
+            "인사평가",
+            "평가제도",
+            "okr"
+          ],
+          "frequency_score": 230.65
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Notion",
+          "search_group": [
+            "Notion",
+            "notion"
+          ],
+          "frequency_score": 184.33
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Interview",
+          "search_group": [
+            "Interview",
+            "interview"
+          ],
+          "frequency_score": 182.6
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "TOEIC",
+          "search_group": [
+            "TOEIC",
+            "toeic"
+          ],
+          "frequency_score": 173.37
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Data",
+          "search_group": [
+            "Data",
+            "data"
+          ],
+          "frequency_score": 144.89
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "MES",
+          "search_group": [
+            "mes",
+            "MES"
+          ],
+          "frequency_score": 94.94
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "DevOps",
+          "search_group": [
+            "devops",
+            "DevOps"
+          ],
+          "frequency_score": 83.13
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Slack",
+          "search_group": [
+            "slack",
+            "Slack"
+          ],
+          "frequency_score": 81.95
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "GitHub",
+          "search_group": [
+            "GitHub",
+            "github"
+          ],
+          "frequency_score": 75.4
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "PostgreSQL",
+          "search_group": [
+            "postgresql",
+            "PostgreSQL"
+          ],
+          "frequency_score": 72.68
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "CRM",
+          "search_group": [
+            "CRM",
+            "crm"
+          ],
+          "frequency_score": 72.43
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "컴퓨터활용능력",
+          "search_group": [
+            "컴활 1급",
+            "컴활",
+            "컴활2급",
+            "컴활 2급",
+            "컴퓨터활용능력",
+            "컴활1급"
+          ],
+          "frequency_score": 751.9
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "영어회화",
+          "search_group": [
+            "영어회화",
+            "비즈니스회화",
+            "비즈니스 회화",
+            "영어 능통",
+            "비즈니스 영어",
+            "비즈니스영어",
+            "영어 가능",
+            "영어 회화",
+            "영어커뮤니케이션",
+            "영어 커뮤니케이션",
+            "영어가능",
+            "영어회화 가능",
+            "영어능통",
+            "영어회화가능"
+          ],
+          "frequency_score": 413.02
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "일본어",
+          "search_group": [
+            "일본어가능",
+            "jlptn1",
+            "jlpt n1",
+            "일본어",
+            "jlptn2",
+            "일본어회화",
+            "jlpt n2",
+            "일본어 가능",
+            "jlpt",
+            "일본어 회화",
+            "jpt"
+          ],
+          "frequency_score": 388.16
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "중국어",
+          "search_group": [
+            "중국어 가능",
+            "중국어 회화",
+            "hsk 5급",
+            "hsk6급",
+            "중국어가능",
+            "hsk5급",
+            "hsk",
+            "중국어",
+            "중국어회화",
+            "hsk 6급"
+          ],
+          "frequency_score": 345.26
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "공인노무사",
+          "search_group": [
+            "노무사",
+            "공인노무사"
+          ],
+          "frequency_score": 254.16
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "TOEIC",
+          "search_group": [
+            "TOEIC",
+            "토익",
+            "toeic"
+          ],
+          "frequency_score": 173.37
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "정보처리산업기사",
+          "search_group": [
+            "정보처리산업기사"
+          ],
+          "frequency_score": 102.72
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "TOEIC Speaking",
+          "search_group": [
+            "toeicspeaking",
+            "toeic스피킹",
+            "토익 스피킹",
+            "TOEIC Speaking",
+            "토스",
+            "토익스피킹",
+            "toeic speaking"
+          ],
+          "frequency_score": 85.58
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "OPIc",
+          "search_group": [
+            "OPIc",
+            "opic",
+            "오픽"
+          ],
+          "frequency_score": 54.9
+        }
+      ]
+    },
+    "acc": {
+      "job_category": "acc",
+      "keyword_groups": [
+        {
+          "type": "skills",
+          "representative_keyword": "재무회계",
+          "search_group": [
+            "경리",
+            "전산세무",
+            "재무회계",
+            "전산회계"
+          ],
+          "frequency_score": 1511.96
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "결산",
+          "search_group": [
+            "결산",
+            "월결산",
+            "연결산"
+          ],
+          "frequency_score": 1470.4
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "더존",
+          "search_group": [
+            "douzone",
+            "더존",
+            "더존스마트",
+            "더존 스마트",
+            "스마트a"
+          ],
+          "frequency_score": 1370.12
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "SAP",
+          "search_group": [
+            "erp",
+            "sap",
+            "SAP"
+          ],
+          "frequency_score": 1281.25
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Excel",
+          "search_group": [
+            "Excel",
+            "엑셀",
+            "excel"
+          ],
+          "frequency_score": 1070.74
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "세무신고",
+          "search_group": [
+            "종소세",
+            "원천세",
+            "법인세",
+            "세무신고",
+            "부가세"
+          ],
+          "frequency_score": 917.86
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "재무제표",
+          "search_group": [
+            "재무제표",
+            "자금 관리",
+            "자금관리"
+          ],
+          "frequency_score": 746.81
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "IFRS",
+          "search_group": [
+            "ifrs",
+            "IFRS"
+          ],
+          "frequency_score": 509.58
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "원가회계",
+          "search_group": [
+            "원가계산",
+            "원가 계산",
+            "원가회계"
+          ],
+          "frequency_score": 199.08
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Oracle",
+          "search_group": [
+            "oracle",
+            "Oracle"
+          ],
+          "frequency_score": 102.74
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "자금집행",
+          "search_group": [
+            "출납",
+            "이체",
+            "자금집행"
+          ],
+          "frequency_score": 85.98
+        },
+        {
+          "type": "skills",
+          "representative_keyword": "Microsoft",
+          "search_group": [
+            "microsoft",
+            "Microsoft"
+          ],
+          "frequency_score": 80.88
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "전산세무",
+          "search_group": [
+            "세무 1급",
+            "전산세무",
+            "세무 2급",
+            "세무1급",
+            "전산세무2급",
+            "전산세무 1급",
+            "전산세무 2급",
+            "세무2급",
+            "전산세무1급"
+          ],
+          "frequency_score": 786.96
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "전산회계",
+          "search_group": [
+            "전산회계 2급",
+            "전산회계 1급",
+            "회계 2급",
+            "회계2급",
+            "회계1급",
+            "전산회계1급",
+            "전산회계2급",
+            "전산회계",
+            "회계 1급"
+          ],
+          "frequency_score": 701.23
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "세무사",
+          "search_group": [
+            "cta",
+            "세무사"
+          ],
+          "frequency_score": 516.33
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "컴퓨터활용능력",
+          "search_group": [
+            "컴활 1급",
+            "컴활",
+            "컴활2급",
+            "컴활 2급",
+            "컴퓨터활용능력",
+            "컴활1급"
+          ],
+          "frequency_score": 362.78
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "공인회계사",
+          "search_group": [
+            "공인회계사",
+            "cpa"
+          ],
+          "frequency_score": 330.29
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "회계관리",
+          "search_group": [
+            "회계관리 2급",
+            "회계관리",
+            "회계관리 1급",
+            "회계관리2급",
+            "회계관리1급"
+          ],
+          "frequency_score": 287.56
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "영어회화",
+          "search_group": [
+            "영어회화",
+            "비즈니스회화",
+            "비즈니스 회화",
+            "영어 능통",
+            "비즈니스 영어",
+            "비즈니스영어",
+            "영어 가능",
+            "영어 회화",
+            "영어커뮤니케이션",
+            "영어 커뮤니케이션",
+            "영어가능",
+            "영어회화 가능",
+            "영어능통",
+            "영어회화가능"
+          ],
+          "frequency_score": 215.11
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "재경관리사",
+          "search_group": [
+            "재경관리사"
+          ],
+          "frequency_score": 172.31
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "중국어",
+          "search_group": [
+            "중국어 가능",
+            "중국어 회화",
+            "hsk 5급",
+            "hsk6급",
+            "중국어가능",
+            "hsk5급",
+            "hsk",
+            "중국어",
+            "중국어회화",
+            "hsk 6급"
+          ],
+          "frequency_score": 92.69
+        },
+        {
+          "type": "certifications",
+          "representative_keyword": "일본어",
+          "search_group": [
+            "일본어가능",
+            "jlptn1",
+            "jlpt n1",
+            "일본어",
+            "jlptn2",
+            "일본어회화",
+            "jlpt n2",
+            "일본어 가능",
+            "jlpt",
+            "일본어 회화",
+            "jpt"
+          ],
+          "frequency_score": 77.63
+        }
+      ]
+    }
+  }
+}
