@@ -261,9 +261,15 @@ def build_mock_mart(job_name):
 # =====================================================================
 # 2. 실제 데이터 로더 (기존 파이프라인 결과물 우선 로드)
 # =====================================================================
+# 실행 환경(CWD)과 무관하게 데이터 파일을 정확히 참조할 수 있도록 파일 기준 절대경로 계산
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))      # project2/report/
+_PROJECT_ROOT = os.path.dirname(_CURRENT_DIR)                 # project2/
+_WORKSPACE_ROOT = os.path.dirname(_PROJECT_ROOT)               # repository root/
+
 @st.cache_data
 def load_real_mismatch_mart():
     paths = [
+        os.path.join(_WORKSPACE_ROOT, "automated_total_mismatch_mart.csv"),
         "automated_total_mismatch_mart.csv",
         "../automated_total_mismatch_mart.csv",
     ]
@@ -278,6 +284,7 @@ def load_real_mismatch_mart():
 @st.cache_data
 def load_naver_cafe_data():
     paths = [
+        os.path.join(_WORKSPACE_ROOT, "naver-api-app", "data", "naver_dataanalysis.csv"),
         "naver-api-app/data/naver_dataanalysis.csv",
         "../naver-api-app/data/naver_dataanalysis.csv",
     ]
@@ -292,9 +299,11 @@ def load_naver_cafe_data():
 @st.cache_data
 def load_saramin_db():
     paths = [
+        os.path.join(_PROJECT_ROOT, "data", "recruit_processed.db"),
         "project2/data/recruit_processed.db",
         "data/recruit_processed.db",
         "../data/recruit_processed.db",
+        os.path.join(_WORKSPACE_ROOT, "saramin", "data", "saramin_search_jobs.db"),
         "saramin/data/saramin_search_jobs.db",
         "../saramin/data/saramin_search_jobs.db",
     ]
@@ -322,6 +331,7 @@ def load_saramin_db():
 @st.cache_data
 def load_turnover_datamart():
     paths = [
+        os.path.join(_WORKSPACE_ROOT, "saramin", "data", "saramin_turnover_datamart.csv"),
         "saramin/data/saramin_turnover_datamart.csv",
         "../saramin/data/saramin_turnover_datamart.csv",
     ]
@@ -336,9 +346,11 @@ def load_turnover_datamart():
 @st.cache_data
 def load_naver_weekly_insights():
     paths = [
+        os.path.join(_PROJECT_ROOT, "data", "integrated", "naver_weekly_insights.json"),
         "project2/data/integrated/naver_weekly_insights.json",
         "data/integrated/naver_weekly_insights.json",
         "../data/integrated/naver_weekly_insights.json",
+        os.path.join(_PROJECT_ROOT, "data", "naver-api_20260718.json"),
         "project2/data/naver-api_20260718.json",  # fallback
     ]
     for p in paths:
