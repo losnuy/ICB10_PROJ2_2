@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마스터 통합 채용 미스매치 & 자가진단 대시보드 (SaaS)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Outfit & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b0f19;
+            color: #f1f5f9;
+        }
+        h1, h2, h3, .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Top Decorative Header -->
+    <div class="h-1.5 w-full bg-gradient-to-r from-violet-600 via-indigo-600 to-emerald-500"></div>
+
+    <div class="flex flex-1 flex-col lg:flex-row">
+        <!-- Sidebar Controller -->
+        <aside class="w-full lg:w-80 bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-900 p-6 flex flex-col justify-between shrink-0">
+            <div>
+                <!-- Brand logo/title -->
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-white tracking-tight">마스터 컨트롤러</h2>
+                        <span class="text-xs text-slate-500 font-medium">통합 미스매치 SaaS v1.2</span>
+                    </div>
+                </div>
+
+                <!-- Job Switcher Select Box -->
+                <div class="space-y-2 mb-6">
+                    <label for="job-select" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">분석할 직무 선택</label>
+                    <select id="job-select" class="w-full bg-slate-900 border border-slate-800 text-slate-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                        <option value="기획/전략">기획/전략</option>
+                        <option value="인사/노무">인사/노무</option>
+                        <option value="회계/재무">회계/재무</option>
+                        <option value="감사/컴플라이언스">감사/컴플라이언스</option>
+                        <option value="마케팅">마케팅</option>
+                        <option value="데이터분석가/AI엔지니어">데이터분석가/AI엔지니어</option>
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-1">직무 변경 시 탭 2(구직자)와 탭 3(인사팀)의 데이터가 반응형으로 자동 갱신됩니다.</p>
+                </div>
+
+                <!-- Data Source Status Card -->
+                <div class="bg-slate-900/50 border border-slate-900 rounded-2xl p-4 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">데이터 소스 현황</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">수급마트 (실제)</span>
+                            <span id="source-mart-status" class="flex items-center gap-1.5 font-medium text-emerald-400">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>연동 완료
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">네이버카페 (실제)</span>
+                            <span id="source-naver-status" class="flex items-center gap-1.5 font-medium text-emerald-400">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>연동 완료
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">사람인 DB (실제)</span>
+                            <span id="source-saramin-status" class="flex items-center gap-1.5 font-medium text-emerald-400">
+                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>연동 완료
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer info in Sidebar -->
+            <div class="mt-8 pt-6 border-t border-slate-900 text-center lg:text-left">
+                <span class="text-[10px] text-slate-600 block">통합 SaaS 대시보드 리포트</span>
+                <span class="text-[10px] text-slate-600 block">© 2026 HR Tech Master System</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            
+            <!-- Dynamic Notification / Banner for Mock Job -->
+            <div id="mock-warning-banner" class="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2.5 flex items-center justify-between text-xs text-amber-300 hidden">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>⚠️ <strong>[MOCK DATA ACTIVE]</strong> 현재 선택하신 직무는 데모용 가상 데이터(Mock Data)를 활용하고 있습니다. 실제 환경에서는 파이프라인 연동에 따라 자동 수급됩니다.</span>
+                </div>
+            </div>
+
+            <!-- Main Tab Bar Navigation -->
+            <div class="bg-slate-950 border-b border-slate-900 px-6 pt-4">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+                    <div>
+                        <h1 class="text-2xl font-extrabold text-white tracking-tight">취업 시장 다차원 EDA & 직무 적합도 진단</h1>
+                        <p class="text-xs text-slate-400 mt-1">사람인 공고 1,000건(수요) + 네이버 API 검색 및 언급량(공급) 기반 다차원 매칭</p>
+                    </div>
+                </div>
+
+                <!-- 4 Tabs header -->
+                <nav class="flex gap-6 -mb-4">
+                    <button onclick="switchTab(0)" id="tab-btn-0" class="tab-btn border-b-2 border-indigo-500 text-indigo-400 font-semibold text-sm pb-4 px-1 transition-all">
+                        🏠 홈: 전 직무 미스매치 현황
+                    </button>
+                    <button onclick="switchTab(1)" id="tab-btn-1" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-semibold text-sm pb-4 px-1 transition-all">
+                        📊 취업 마켓 다차원 EDA 센터
+                    </button>
+                    <button onclick="switchTab(2)" id="tab-btn-2" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-semibold text-sm pb-4 px-1 transition-all">
+                        💡 구직자: 스펙 자가진단 및 스코어링
+                    </button>
+                    <button onclick="switchTab(3)" id="tab-btn-3" class="tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-semibold text-sm pb-4 px-1 transition-all">
+                        🏢 인사팀: 수급 Gap 분석 및 JD 최적화
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tabs Content Area -->
+            <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+                
+                <!-- TAB 0: 홈 (Intro): 전 직무 미스매치 종합 현황 -->
+                <section id="tab-content-0" class="tab-pane space-y-8">
+                    <div class="bg-slate-900/20 border border-slate-900 rounded-3xl p-6">
+                        <h2 class="text-lg font-bold text-white mb-2">🏠 전 직무 채용 미스매치 종합 현황</h2>
+                        <p class="text-xs text-slate-400">본 플랫폼은 6개 핵심 직무의 채용 미스매치 크기(Gap Index)를 실시간 모니터링하여 인재 정보 비대칭의 크기를 비교합니다.</p>
+                    </div>
+
+                    <!-- Volatility / Index compare Chart -->
+                    <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6">
+                        <h3 class="text-base font-bold text-white mb-4">📊 직무군별 평균 미스매치 지수 (Gap Index) 비교</h3>
+                        <div id="home-index-chart" class="w-full bg-slate-950/50 rounded-2xl border border-slate-900" style="height: 400px;"></div>
+                    </div>
+
+                    <div class="bg-indigo-650/10 border border-indigo-500/20 rounded-2xl p-5">
+                        <h4 class="text-xs font-bold text-indigo-400 mb-2">💡 미스매치 지표 해석 가이드</h4>
+                        <p class="text-xs text-indigo-300 leading-relaxed">
+                            평균 미스매치 지수(Gap Index)는 각 직무군의 마스터 스킬셋별 <strong>|기업 수요(공고 수) - 구직자 공급량(검색/카페 언급)|</strong>의 평균값입니다. 지표가 높을수록 해당 직무군 내에서 구직자의 스펙 선호와 기업의 채용 요건 간의 정보 비대칭 및 미스매치가 강하게 발생하고 있음을 나타냅니다.
+                        </p>
+                    </div>
+                </section>
+                
+                <!-- TAB 1: 취업 마켓 다차원 EDA 센터 -->
+                <section id="tab-content-1" class="tab-pane space-y-8 hidden">
+                    <div class="bg-slate-900/20 border border-slate-900 rounded-3xl p-6">
+                        <h2 class="text-lg font-bold text-white mb-2">📊 취업 마켓 다차원 EDA 센터</h2>
+                        <p class="text-xs text-slate-400">기업 공고 수요와 구직자 행동 데이터의 통계적 패턴을 심층 시각화하는 다차원 마켓 센터입니다.</p>
+                    </div>
+
+                    <!-- 4-Quadrant Positioning Map -->
+                    <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6">
+                        <div class="mb-4">
+                            <h3 class="text-base font-bold text-white">① 수요-공급 4분면 포지셔닝 맵</h3>
+                            <p class="text-xs text-slate-400 mt-1">X축(기업 공고 수요)과 Y축(구직자 검색 공급량)을 교차하여 과공급 위험 영역과 블루오션(채용난) 영역을 분리 유도합니다.</p>
+                        </div>
+                        <div id="scatter-chart" class="w-full bg-slate-950/50 rounded-2xl border border-slate-900" style="height: 500px;"></div>
+                    </div>
+
+                    <!-- Two-column Layout for Co-occurrence Network and Volatility Analysis -->
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <!-- Network Graph -->
+                        <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6">
+                            <div class="mb-4">
+                                <h3 class="text-base font-bold text-white">② 세부 직무별 스킬 태그 동시 출현(Co-occurrence) 네트워크</h3>
+                                <p class="text-xs text-slate-400 mt-1">공고에서 하나의 세트로 묶여 요구되는 역량 군집(Cluster)을 네트워크 형태로 확인합니다.</p>
+                            </div>
+                            <div id="network-chart" class="w-full bg-slate-950/50 rounded-2xl border border-slate-900" style="height: 420px;"></div>
+                        </div>
+
+                        <!-- Time-Series Volatility Chart -->
+                        <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6">
+                            <div class="mb-4">
+                                <h3 class="text-base font-bold text-white">③ 시계열 검색량 변동성(Volatility) 분석</h3>
+                                <p class="text-xs text-slate-400 mt-1">2026년 상반기 조합어 데이터의 월별 추이를 분석하여 공채 시즌 전후 구직자 유입 피크 시점을 도출합니다.</p>
+                            </div>
+                            <div class="mb-4">
+                                <div id="vol-skills-checkboxes" class="flex flex-wrap gap-2 text-xs"></div>
+                            </div>
+                            <div id="volatility-chart" class="w-full bg-slate-950/50 rounded-2xl border border-slate-900" style="height: 350px;"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 2: 구직자 스펙 자가진단 및 스코어링 -->
+                <section id="tab-content-2" class="tab-pane space-y-8 hidden">
+                    <div class="bg-slate-900/20 border border-slate-900 rounded-3xl p-6">
+                        <h2 class="text-lg font-bold text-white mb-2">💡 구직자향: 스펙 자가진단 및 스코어링 엔진</h2>
+                        <p class="text-xs text-slate-400">구직자가 본인의 보유 스펙을 입력하면, 경력/학력/자격증/툴/경험 5대 차원 가중치 기반 적합도를 즉시 스코어링합니다.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Profile/Skill Selectors -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 space-y-6">
+                                <div>
+                                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-3">나의 직무 역량 프로필 입력</h3>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div class="space-y-1.5">
+                                            <label class="text-xs text-slate-400 font-semibold">나의 경력 수준</label>
+                                            <select id="user-career" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                                <option value="0">신입 (0년)</option>
+                                                <option value="2" selected>주니어 (1~3년)</option>
+                                                <option value="5">미들 (4~7년)</option>
+                                                <option value="10">시니어 (8년 이상)</option>
+                                            </select>
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            <label class="text-xs text-slate-400 font-semibold">최종 학력</label>
+                                            <select id="user-edu" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                                <option value="0">고졸 이하</option>
+                                                <option value="1">초대졸 (2/3년제)</option>
+                                                <option value="2" selected>대졸 (4년제 학사)</option>
+                                                <option value="3">대학원 (석사/박사)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Segmented Skillsets -->
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">나의 세부 역량 선택</h3>
+                                        <button onclick="clearDiagnosis()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">선택 초기화</button>
+                                    </div>
+                                    
+                                    <div class="space-y-4">
+                                        <div>
+                                            <span class="block text-xs font-semibold text-slate-400 mb-2">🎖️ 보유 자격증</span>
+                                            <div id="license-checkbox-group" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                                        </div>
+                                        <div>
+                                            <span class="block text-xs font-semibold text-slate-400 mb-2">🛠️ 실무 활용 툴</span>
+                                            <div id="tool-checkbox-group" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                                        </div>
+                                        <div>
+                                            <span class="block text-xs font-semibold text-slate-400 mb-2">💼 실무/직무 경험</span>
+                                            <div id="experience-checkbox-group" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                                        </div>
+                                    </div>
+
+                                    <button onclick="runDiagnosisScore()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20">
+                                        📊 나의 다차원 직무 적합도 진단 실행
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Diagnosis Scoring & Advice Report Card -->
+                        <div class="space-y-6">
+                            <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 flex flex-col items-center text-center space-y-4">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">종합 직무 적합도 점수</h3>
+                                
+                                <div class="relative flex items-center justify-center">
+                                    <div id="diagnose-radial-chart" class="w-40 h-40"></div>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span id="diagnose-score-value" class="text-3xl font-black text-indigo-400 font-outfit">0.0점</span>
+                                        <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mt-1">Suitability</span>
+                                    </div>
+                                </div>
+
+                                <div class="w-full pt-4 border-t border-slate-900 text-left text-xs space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">매칭 가중 비중</span>
+                                        <span class="font-medium text-slate-300">각 20% 균등 반영</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">선택된 보유 스킬</span>
+                                        <span id="selected-skills-count" class="font-medium text-slate-300">0개</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Spec priority recommendations -->
+                            <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 space-y-4">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">탑티어 스펙 우선순위 처방 (TOP 3)</h3>
+                                <div id="advice-priority-list" class="space-y-3">
+                                    <p class="text-xs text-slate-500 italic">진단 실행 후 활성화됩니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: 인사팀 수급 Gap 분석 및 JD 최적화 -->
+                <section id="tab-content-3" class="tab-pane space-y-8 hidden">
+                    <div class="bg-slate-900/20 border border-slate-900 rounded-3xl p-6">
+                        <h2 class="text-lg font-bold text-white mb-2">🏢 인사팀향: 수급 Gap 분석 및 JD 최적화 도구</h2>
+                        <p class="text-xs text-slate-400">인사담당자가 스킬 수급의 미스매치를 파악하고 적격 인재 지원을 유도하는 최적화 도구입니다.</p>
+                    </div>
+
+                    <!-- Supply-Demand Gap Dual Axis Chart -->
+                    <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6">
+                        <div class="mb-4">
+                            <h3 class="text-base font-bold text-white">① 이중 축 수급 Gap 비교 분석 그래프</h3>
+                            <p class="text-xs text-slate-400 mt-1">기업 우대 빈도와 구직자 관심도 Gap의 크기를 직관적으로 대조합니다.</p>
+                        </div>
+                        <div id="gap-chart" class="w-full bg-slate-950/50 rounded-2xl border border-slate-900" style="height: 400px;"></div>
+                    </div>
+
+                    <!-- Mismatch Keyword classification Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-2xl">
+                            <h4 class="text-base font-bold text-amber-400 mb-2">⚠️ 과공급 위험 키워드 (스펙 과밀)</h4>
+                            <p class="text-xs text-amber-300/80 mb-4">구직자의 준비 비율은 매우 높으나 실제 기업 채용 우대사항 비중은 낮은 스펙입니다.</p>
+                            <div id="oversupply-list" class="space-y-2"></div>
+                        </div>
+                        <div class="p-6 bg-gradient-to-br from-rose-500/10 to-rose-600/5 border border-rose-500/20 rounded-2xl">
+                            <h4 class="text-base font-bold text-rose-400 mb-2">🔥 채용난 위험 키워드 (인재 부족)</h4>
+                            <p class="text-xs text-rose-300/80 mb-4">기업 공고 우대 요구 빈도는 높으나 정작 공급이 전멸 상태인 전문 역량 구간입니다.</p>
+                            <div id="shortage-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Two-column Layout for JD Optimization and Strategy Advice -->
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <!-- JD remodeling simulator -->
+                        <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 space-y-4">
+                            <div>
+                                <h3 class="text-base font-bold text-white">② JD(채용공고) 리모델링 시뮬레이터</h3>
+                                <p class="text-xs text-slate-400 mt-1">우대할 스펙 요건을 선택하면 채용공고 초안과 시장 타겟팅 피드백이 실시간 자동 빌드됩니다.</p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs text-slate-400 font-semibold">채용 타겟 포지션명</label>
+                                        <input id="jd-title-input" type="text" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="text-xs text-slate-400 font-semibold">경력 요구 사항</label>
+                                        <select id="jd-exp-select" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option>신입 (0년)</option>
+                                            <option selected>1~3년 차 주니어</option>
+                                            <option>3~5년 차 미들</option>
+                                            <option>5년 이상 시니어</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-950 p-4 rounded-xl border border-slate-900">
+                                    <span class="block text-xs font-semibold text-slate-400 mb-3">JD 강조 핵심 스킬 체크 (복수 선택)</span>
+                                    <div id="jd-simulator-skills" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                                </div>
+
+                                <div class="bg-slate-950 p-4 rounded-xl border border-slate-900">
+                                    <span class="block text-xs font-semibold text-slate-400 mb-2">공고 커뮤니케이션 톤</span>
+                                    <div class="flex gap-4 text-xs mt-1">
+                                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                                            <input type="radio" name="jd_tone" value="startup" checked class="text-indigo-600 focus:ring-indigo-500"> 스타트업 톤
+                                        </label>
+                                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                                            <input type="radio" name="jd_tone" value="corporate" class="text-indigo-600 focus:ring-indigo-500"> 대기업 톤
+                                        </label>
+                                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                                            <input type="radio" name="jd_tone" value="tech" class="text-indigo-600 focus:ring-indigo-500"> 데이터 테크 톤
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button onclick="runJdSimulation()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl transition-all shadow-lg">
+                                    ⚡ 미스매치 분석 기반 JD 초안 자동 생성
+                                </button>
+
+                                <div id="jd-sim-output-container" class="hidden space-y-4">
+                                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-900">
+                                        <span class="block text-xs font-bold text-slate-300 mb-2">📝 최적화 채용 공고 초안</span>
+                                        <pre id="jd-sim-draft" class="text-xs text-slate-300 whitespace-pre-wrap font-sans leading-relaxed"></pre>
+                                    </div>
+                                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-900">
+                                        <span class="block text-xs font-bold text-slate-300 mb-2">💡 시뮬레이터 수급 최적화 피드백</span>
+                                        <div id="jd-sim-feedback" class="space-y-1.5 text-xs text-slate-400"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 10-year Senior Advice Card -->
+                        <div class="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 flex flex-col justify-between space-y-6">
+                            <div>
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="p-2.5 bg-violet-600/20 text-violet-400 rounded-xl border border-violet-500/20">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-base font-bold text-white">③ 10년 차 수석 기획자의 채용 전략 제언</h3>
+                                        <span class="text-xs text-violet-400 font-medium">B2B HR 최적화 컨설팅 처방전</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-indigo-650/10 border border-indigo-500/20 rounded-2xl p-5">
+                                    <p id="advice-strategy-text" class="text-xs text-indigo-300 leading-relaxed">
+                                        직무를 선택하면 채용 시장 트렌드에 최적화된 전략 가이드가 출력됩니다.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-950 p-4 rounded-xl border border-slate-900/80 flex items-start gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p class="text-[11px] text-slate-500 leading-relaxed">
+                                    <strong>인사담당자 참고 가이드:</strong> 채용난 위험 역량은 지원 장벽을 낮추기 위해 우대 등급을 올리고 공고 내 최상단에 강조하는 것이 유리하며, 과공급 상태의 일반 실무 지식은 보조 요건으로 축소 배치하시는 것을 제안해 드립니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Bottom Footer bar -->
+            <footer class="bg-slate-950 border-t border-slate-900 px-6 py-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
+                <span>📊 취업 시장 다차원 EDA & 직무 적합도 진단 솔루션 (SaaS)</span>
+                <span>자동 수급 및 수집 마스터 파이프라인 통합 리포트 | ⚠️ 데모 데이터 포함</span>
+            </footer>
+        </main>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // =====================================================================
+        // DATASET DEFINITION (Mock + Real combination)
+        // =====================================================================
+        const jobData = {
+            "기획/전략": {
+                skills: ["SQLD", "ADsP", "Figma", "GA4", "CPA", "CFA", "M&A", "PPT작성법", "데이터분석", "시장조사", "컴퓨터활용능력"],
+                demand: [1, 2, 20, 10, 7, 2, 63, 131, 153, 97, 30],
+                supply: [15000, 12000, 4500, 8000, 18000, 6000, 9000, 22000, 35000, 28000, 45000],
+                monthly: {
+                    "2026-01": [45.2, 38.5, 32.1, 15.1, 40.0, 12.0, 18.2, 70.5, 60.5, 42.1, 85.0],
+                    "2026-02": [48.1, 42.0, 35.0, 18.3, 43.2, 11.2, 20.1, 75.2, 64.0, 45.0, 92.1],
+                    "2026-03": [55.4, 47.3, 39.8, 22.0, 45.1, 14.5, 23.4, 68.0, 68.2, 48.3, 78.4],
+                    "2026-04": [62.0, 52.8, 44.5, 25.4, 38.0, 16.0, 25.0, 71.4, 72.1, 50.2, 82.5],
+                    "2026-05": [58.7, 49.1, 41.0, 21.2, 36.5, 15.3, 22.1, 73.5, 70.0, 47.5, 88.0],
+                    "2026-06": [50.1, 41.5, 38.5, 19.8, 34.0, 13.1, 19.5, 78.0, 65.4, 43.1, 95.0]
+                },
+                cooccurrence: [
+                    ["Figma", "역기획"], ["Figma", "서비스로그 분석"], ["Figma", "SQLD"],
+                    ["역기획", "서비스로그 분석"], ["역기획", "SQLD"], ["서비스로그 분석", "SQLD"],
+                    ["시장조사 및 리서치", "M&A 검토"], ["시장조사 및 리서치", "PPT작성법"], ["M&A 검토", "CPA"],
+                    ["PPT작성법", "CPA"], ["데이터분석", "GA4"], ["데이터분석", "SQLD"]
+                ],
+                licenses: ["SQLD", "ADsP", "정보처리기사", "CFA", "CPA", "컴퓨터활용능력"],
+                tools: ["Figma", "GA4", "Slack", "Jira", "Git", "ERP (더존/SAP)", "Tableau"],
+                experiences: ["역기획", "프로토타이핑", "서비스로그 분석", "M&A 검토", "시장조사 및 리서치", "사업타당성 분석", "예산 및 결산 관리"],
+                advice: "인재 부족 영역인 'Figma/M&A' 인재를 유인하기 위해, 구직자 검색 빈도가 높은 키워드를 공고 상단에 의도적으로 배치(JD Optimization)하고 사내 기획자 양성 로드맵을 선제 공개하십시오. 컴퓨터활용능력·PPT작성법 등 과공급 키워드는 과감히 축소 배치하세요.",
+                isMock: false
+            },
+            "인사/노무": {
+                skills: ["공인노무사", "PHR/SPHR", "직업상담사", "ERP(인사)", "노동법 대응", "조직문화 설계", "성과관리 시스템 구축", "채용면접기법", "Slack", "Workday", "엑셀"],
+                demand: [45, 8, 22, 35, 72, 55, 48, 30, 25, 40, 95],
+                supply: [5000, 1200, 8500, 3000, 15000, 12000, 9500, 7000, 18000, 2200, 38000],
+                monthly: {
+                    "2026-01": [30.0, 10.5, 45.0, 20.0, 55.0, 40.0, 35.0, 28.0, 70.0, 15.0, 80.0],
+                    "2026-02": [33.0, 12.0, 48.0, 22.0, 58.0, 42.0, 37.0, 30.0, 72.0, 18.0, 85.0],
+                    "2026-03": [38.0, 14.0, 52.0, 25.0, 62.0, 47.0, 40.0, 33.0, 68.0, 20.0, 78.0],
+                    "2026-04": [42.0, 15.0, 55.0, 28.0, 65.0, 50.0, 43.0, 36.0, 74.0, 24.0, 83.0],
+                    "2026-05": [39.0, 13.5, 50.0, 26.0, 60.0, 46.0, 41.0, 34.0, 73.0, 22.0, 86.0],
+                    "2026-06": [35.0, 11.0, 47.0, 23.0, 57.0, 43.0, 38.0, 31.0, 76.0, 21.0, 90.0]
+                },
+                cooccurrence: [
+                    ["노동법 대응", "공인노무사"], ["노동법 대응", "조직문화 설계"], ["성과관리 시스템 구축", "채용면접기법"],
+                    ["조직문화 설계", "성과관리 시스템 구축"], ["ERP(인사)", "성과관리 시스템 구축"]
+                ],
+                licenses: ["공인노무사", "PHR/SPHR", "직업상담사", "ERP(인사)"],
+                tools: ["Slack", "Workday", "엑셀", "Google Workspace"],
+                experiences: ["노동법 대응", "조직문화 설계", "성과관리 시스템 구축", "채용면접기법"],
+                advice: "노동법·컴플라이언스 전문 인재의 공급이 크게 부족합니다. 공인노무사 자격 보유자뿐 아니라 노동법 실무 경험자도 우대 범위에 포함시키고, 인사 ERP 활용 역량을 JD에 명시하여 디지털 HR 인재를 확보하세요.",
+                isMock: true
+            },
+            "회계/재무": {
+                skills: ["CPA", "세무사", "재경관리사", "AICPA", "ERP(회계)", "IFRS 적용", "SAP", "엑셀(VBA)", "더존 i-U"],
+                demand: [85, 62, 40, 15, 70, 55, 48, 90, 65],
+                supply: [25000, 18000, 12000, 3000, 8000, 5500, 4000, 35000, 6000],
+                monthly: {
+                    "2026-01": [60.0, 50.0, 35.0, 12.0, 42.0, 30.0, 25.0, 75.0, 45.0],
+                    "2026-02": [63.0, 53.0, 38.0, 13.0, 45.0, 32.0, 27.0, 78.0, 48.0],
+                    "2026-03": [68.0, 58.0, 42.0, 15.0, 50.0, 36.0, 30.0, 82.0, 52.0],
+                    "2026-04": [72.0, 62.0, 45.0, 16.0, 53.0, 38.0, 33.0, 85.0, 55.0],
+                    "2026-05": [69.0, 59.0, 43.0, 14.5, 48.0, 35.0, 31.0, 80.0, 50.0],
+                    "2026-06": [65.0, 55.0, 40.0, 13.5, 44.0, 33.0, 28.0, 77.0, 47.0]
+                },
+                cooccurrence: [
+                    ["CPA", "IFRS 적용"], ["CPA", "세무사"], ["IFRS 적용", "SAP"],
+                    ["ERP(회계)", "SAP"], ["엑셀(VBA)", "재경관리사"]
+                ],
+                licenses: ["CPA", "세무사", "재경관리사", "AICPA"],
+                tools: ["ERP(회계)", "SAP", "더존 i-U", "엑셀(VBA)"],
+                experiences: ["IFRS 적용", "세무 조정", "예산 편성 및 통제", "자금 운용 및 조달"],
+                advice: "CPA·세무사 자격의 공급 과잉에 비해 IFRS·SAP·AICPA 등 글로벌 재무 역량은 심각한 공급 부족 상태입니다. 국제 회계 기준 경험자를 우대하고, 엑셀(VBA) 고급 활용 역량을 별도 기술 요건으로 분리 기술하세요.",
+                isMock: true
+            },
+            "감사/컴플라이언스": {
+                skills: ["CIA", "CISA", "CFE", "내부감사 수행", "준법 감시", "SOX 대응", "데이터분석(감사)", "리스크 평가", "ACL", "IDEA"],
+                demand: [30, 42, 18, 65, 55, 25, 38, 48, 12, 10],
+                supply: [2000, 1500, 1200, 10000, 8000, 1800, 5000, 6500, 800, 700],
+                monthly: {
+                    "2026-01": [18.0, 22.0, 10.0, 40.0, 35.0, 15.0, 25.0, 30.0, 5.0, 4.0],
+                    "2026-02": [20.0, 25.0, 12.0, 43.0, 38.0, 17.0, 28.0, 33.0, 6.0, 5.0],
+                    "2026-03": [23.0, 28.0, 14.0, 48.0, 42.0, 20.0, 32.0, 37.0, 7.0, 6.0],
+                    "2026-04": [25.0, 30.0, 15.0, 50.0, 45.0, 22.0, 35.0, 40.0, 8.0, 7.0],
+                    "2026-05": [22.0, 27.0, 13.0, 46.0, 40.0, 19.0, 30.0, 36.0, 7.5, 6.5],
+                    "2026-06": [19.0, 24.0, 11.0, 42.0, 37.0, 16.0, 27.0, 32.0, 6.8, 5.8]
+                },
+                cooccurrence: [
+                    ["CIA", "내부감사 수행"], ["CISA", "SOX 대응"], ["CISA", "데이터분석(감사)"],
+                    ["내부감사 수행", "리스크 평가"], ["준법 감시", "리스크 평가"]
+                ],
+                licenses: ["CIA", "CISA", "CFE"],
+                tools: ["ACL", "IDEA", "데이터분석(감사)", "Excel"],
+                experiences: ["내부감사 수행", "SOX 대응", "리스크 평가", "준법 감시"],
+                advice: "내부감사·리스크관리 수요가 급증하지만 CISA·CIA 보유 인재는 극소수입니다. 감사 직무 경력 3년 이상이면 자격증 대신 실무 역량을 우대하는 JD 리모델링이 필요합니다. 데이터 기반 감사(Data Analytics Audit) 역량을 전면 배치하세요.",
+                isMock: true
+            },
+            "마케팅": {
+                skills: ["GA4", "Google Ads", "Meta Ads", "SEO/SEM 최적화", "콘텐츠 기획 및 제작", "CRM 마케팅", "HubSpot", "Braze", "구글 애널리틱스 IQ", "SQLD", "검색광고마케터"],
+                demand: [80, 55, 60, 70, 45, 50, 35, 40, 22, 15, 30],
+                supply: [12000, 8000, 9500, 15000, 20000, 7000, 4000, 18000, 3500, 15000, 9000],
+                monthly: {
+                    "2026-01": [50.0, 35.0, 40.0, 45.0, 55.0, 30.0, 20.0, 48.0, 15.0, 45.0, 30.0],
+                    "2026-02": [53.0, 38.0, 43.0, 48.0, 58.0, 33.0, 22.0, 50.0, 17.0, 48.0, 32.0],
+                    "2026-03": [58.0, 42.0, 48.0, 52.0, 62.0, 37.0, 25.0, 55.0, 20.0, 55.0, 35.0],
+                    "2026-04": [62.0, 45.0, 52.0, 55.0, 65.0, 40.0, 28.0, 58.0, 24.0, 62.0, 38.0],
+                    "2026-05": [59.0, 43.0, 49.0, 53.0, 60.0, 38.0, 26.0, 54.0, 22.0, 58.0, 34.0],
+                    "2026-06": [55.0, 40.0, 45.0, 50.0, 57.0, 35.0, 23.0, 51.0, 19.0, 50.0, 31.0]
+                },
+                cooccurrence: [
+                    ["GA4", "Google Ads"], ["GA4", "SEO/SEM 최적화"], ["Meta Ads", "콘텐츠 기획 및 제작"],
+                    ["HubSpot", "Braze"], ["브랜드 전략 수립", "콘텐츠 기획 및 제작"]
+                ],
+                licenses: ["구글 애널리틱스 IQ", "SQLD", "검색광고마케터"],
+                tools: ["GA4", "Google Ads", "Meta Ads", "HubSpot", "Braze"],
+                experiences: ["SEO/SEM 최적화", "콘텐츠 기획 및 제작", "CRM 마케팅", "브랜드 전략 수립"],
+                advice: "GA4·Google Ads 등 퍼포먼스 마케팅 역량의 수요가 급증하나, 구직자들은 여전히 브랜드전략·콘텐츠마케팅 등 전통적 역량에 집중하고 있습니다. 마케팅자동화(HubSpot/Braze 등) 실무 경험을 JD 최우선 요건으로 격상하세요.",
+                isMock: true
+            },
+            "데이터분석가/AI엔지니어": {
+                skills: ["Python", "SQL", "TensorFlow/PyTorch", "Tableau/PowerBI", "지표 정의 및 대시보드 구축", "데이터 파이프라인(ETL) 구축", "ML/DL 모델링", "A/B 테스트 설계 및 분석", "빅데이터분석기사", "ADsP", "AWS Certified Data Analytics"],
+                demand: [120, 110, 65, 50, 45, 30, 55, 35, 28, 25, 20],
+                supply: [40000, 35000, 8000, 6000, 15000, 12000, 5000, 3000, 12000, 15000, 2500],
+                monthly: {
+                    "2026-01": [70.0, 65.0, 35.0, 28.0, 40.0, 45.0, 30.0, 18.0, 35.0, 45.0, 15.0],
+                    "2026-02": [73.0, 68.0, 38.0, 30.0, 42.0, 48.0, 33.0, 20.0, 38.0, 48.0, 18.0],
+                    "2026-03": [78.0, 72.0, 42.0, 33.0, 45.0, 52.0, 37.0, 23.0, 42.0, 55.0, 20.0],
+                    "2026-04": [82.0, 75.0, 45.0, 35.0, 48.0, 55.0, 40.0, 25.0, 48.0, 62.0, 24.0],
+                    "2026-05": [79.0, 73.0, 43.0, 33.0, 46.0, 50.0, 38.0, 22.0, 45.0, 58.0, 22.0],
+                    "2026-06": [75.0, 70.0, 40.0, 31.0, 43.0, 47.0, 35.0, 20.0, 41.0, 50.0, 19.0]
+                },
+                cooccurrence: [
+                    ["Python", "SQL"], ["Python", "TensorFlow/PyTorch"], ["SQL", "Spark"],
+                    ["Tableau/PowerBI", "지표 정의 및 대시보드 구축"], ["AWS Certified Data Analytics", "Spark"]
+                ],
+                licenses: ["빅데이터분석기사", "ADsP", "AWS Certified Data Analytics"],
+                tools: ["Python", "SQL", "Tableau/PowerBI", "Spark", "TensorFlow/PyTorch"],
+                experiences: ["지표 정의 및 대시보드 구축", "데이터 파이프라인(ETL) 구축", "ML/DL 모델링", "A/B 테스트 설계 및 분석"],
+                advice: "Python·SQL 역량은 공급이 과잉이나, TensorFlow/PyTorch 딥러닝 실전 경험과 AWS/GCP 클라우드 ML 파이프라인 역량은 극심한 채용난 상태입니다. Spark 대규모 처리 경험자를 우대하고, 빅데이터분석기사 자격을 보조 우대로 배치하세요.",
+                isMock: true
+            }
+        };
+
+        const colorMap = {
+            "기획/전략": "#818cf8",
+            "인사/노무": "#34d399",
+            "회계/재무": "#fb7185",
+            "감사/컴플라이언스": "#fbbf24",
+            "마케팅": "#60a5fa",
+            "데이터분석가/AI엔지니어": "#a78bfa"
+        };
+
+        // State variables
+        let currentJob = "기획/전략";
+        let activeTab = 0;
+        let selectedDiagnosisSkills = [];
+        let selectedVolatilitySkills = [];
+
+        // DOM elements
+        const jobSelect = document.getElementById('job-select');
+        const mockWarningBanner = document.getElementById('mock-warning-banner');
+        
+        // Tab 2 Elements
+        const userCareer = document.getElementById('user-career');
+        const userEdu = document.getElementById('user-edu');
+        const licenseCheckboxGroup = document.getElementById('license-checkbox-group');
+        const toolCheckboxGroup = document.getElementById('tool-checkbox-group');
+        const experienceCheckboxGroup = document.getElementById('experience-checkbox-group');
+        const diagnose radialChart = document.getElementById('diagnose-radial-chart');
+        const diagnoseScoreValue = document.getElementById('diagnose-score-value');
+        const selectedSkillsCount = document.getElementById('selected-skills-count');
+        const advicePriorityList = document.getElementById('advice-priority-list');
+
+        // Tab 3 Elements
+        const oversupplyList = document.getElementById('oversupply-list');
+        const shortageList = document.getElementById('shortage-list');
+        const jdTitleInput = document.getElementById('jd-title-input');
+        const jdExpSelect = document.getElementById('jd-exp-select');
+        const jdSimulatorSkills = document.getElementById('jd-simulator-skills');
+        const jdSimOutputContainer = document.getElementById('jd-sim-output-container');
+        const jdSimDraft = document.getElementById('jd-sim-draft');
+        const jdSimFeedback = document.getElementById('jd-sim-feedback');
+        const adviceStrategyText = document.getElementById('advice-strategy-text');
+        const volSkillsCheckboxes = document.getElementById('vol-skills-checkboxes');
+
+        // Initializer
+        window.addEventListener('load', () => {
+            initApp();
+            
+            // Event Listener for job switcher
+            jobSelect.addEventListener('change', (e) => {
+                currentJob = e.target.value;
+                updateJobContext();
+            });
+        });
+
+        function initApp() {
+            updateJobContext();
+            switchTab(0);
+        }
+
+        // Switches view between tabs
+        function switchTab(tabIndex) {
+            activeTab = tabIndex;
+            document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+                if (idx === tabIndex) {
+                    btn.classList.add('border-indigo-500', 'text-indigo-400');
+                    btn.classList.remove('border-transparent', 'text-slate-400');
+                } else {
+                    btn.classList.remove('border-indigo-500', 'text-indigo-400');
+                    btn.classList.add('border-transparent', 'text-slate-400');
+                }
+            });
+
+            document.querySelectorAll('.tab-pane').forEach((pane, idx) => {
+                if (idx === tabIndex) {
+                    pane.classList.remove('hidden');
+                } else {
+                    pane.classList.add('hidden');
+                }
+            });
+
+            // Trigger chart redraw on tab switch
+            setTimeout(() => {
+                if (tabIndex === 0) {
+                    renderHomeIndexChart();
+                } else if (tabIndex === 1) {
+                    renderScatterChart();
+                    renderNetworkChart();
+                    renderVolatilityChart();
+                } else if (tabIndex === 2) {
+                    renderDiagnosisScoreGauge(0);
+                } else if (tabIndex === 3) {
+                    renderGapChart();
+                }
+            }, 50);
+        }
+
+        // Updates all components when job is switched
+        function updateJobContext() {
+            const data = jobData[currentJob];
+            
+            // Mock Warning banner toggling
+            if (data.isMock) {
+                mockWarningBanner.classList.remove('hidden');
+            } else {
+                mockWarningBanner.classList.add('hidden');
+            }
+
+            // Reset Tab 2 diagnosis state
+            selectedDiagnosisSkills = [];
+            
+            // Initialize checkbox filters for volatility
+            selectedVolatilitySkills = data.skills.slice(0, 3);
+
+            // Rebuild HTML elements
+            buildDiagnosisCheckboxes();
+            buildJdCheckboxes();
+            buildVolatilityFilters();
+            buildMismatchClassificationCards();
+
+            // Set default JD Title input value
+            jdTitleInput.value = `${currentJob} 실무 전문가`;
+            jdSimOutputContainer.classList.add('hidden');
+            
+            // Update Textual Advice
+            adviceStrategyText.innerHTML = `<strong>💡 [${currentJob}] 채용 전략 제언</strong><br><br>${data.advice}`;
+
+            // Reset diagnosis values
+            diagnoseScoreValue.textContent = `0.0점`;
+            selectedSkillsCount.textContent = `0개`;
+            advicePriorityList.innerHTML = `<p class="text-xs text-slate-500 italic">진단 실행 후 활성화됩니다.</p>`;
+
+            // Refresh charts for current active tab
+            switchTab(activeTab);
+        }
+
+        // =====================================================================
+        // TAB 0: HOME / GENERAL GAP INDEX COMPARISON
+        // =====================================================================
+        function renderHomeIndexChart() {
+            const jobNames = Object.keys(jobData);
+            const gapIndices = jobNames.map(job => {
+                const jData = jobData[job];
+                const sumGap = jData.skills.reduce((sum, skill, idx) => {
+                    return sum + Math.abs(jData.demand[idx] - jData.supply[idx]);
+                }, 0);
+                return sumGap / jData.skills.length;
+            });
+
+            const traces = [{
+                x: jobNames,
+                y: gapIndices,
+                type: 'bar',
+                marker: {
+                    color: jobNames.map((job, idx) => idx === 0 ? '#ef4444' : '#818cf8'),
+                    opacity: 0.85
+                },
+                text: gapIndices.map(val => val.toFixed(0)),
+                textposition: 'auto',
+                hovertemplate: '직무군: %{x}<br>평균 미스매치 지수: %{y:.1f}<extra></extra>'
+            }];
+
+            const layout = {
+                plot_bgcolor: 'rgba(15, 23, 42, 0.4)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l: 50, r: 40, t: 30, b: 50 },
+                xaxis: { tickfont: { color: '#cbd5e1', size: 11 } },
+                yaxis: { title: { text: '평균 미스매치 차이 (건)', font: { color: '#94a3b8' } }, gridcolor: '#1e293b', tickfont: { color: '#64748b' } }
+            };
+
+            Plotly.newPlot('home-index-chart', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+
+        // =====================================================================
+        // TAB 1: PLOTLY CHARTS CREATIONS (EDA Center)
+        // =====================================================================
+
+        function renderScatterChart() {
+            const traces = [];
+            Object.keys(jobData).forEach(job => {
+                const jData = jobData[job];
+                traces.push({
+                    x: jData.demand,
+                    y: jData.supply,
+                    mode: 'markers+text',
+                    name: job,
+                    text: jData.skills,
+                    textposition: 'top center',
+                    textfont: { size: 9, color: '#94a3b8' },
+                    marker: {
+                        size: 10,
+                        color: colorMap[job],
+                        opacity: 0.85,
+                        line: { width: 1, color: '#0b0f19' }
+                    },
+                    hovertemplate: `직무: ${job}<br>역량: %{text}<br>수요: %{x}건<br>공급: %{y:,}건<extra></extra>`
+                });
+            });
+
+            const allDemand = [];
+            const allSupply = [];
+            Object.keys(jobData).forEach(job => {
+                allDemand.push(...jobData[job].demand);
+                allSupply.push(...jobData[job].supply);
+            });
+            const medianDemand = allDemand.sort((a,b) => a-b)[Math.floor(allDemand.length/2)];
+            const medianSupply = allSupply.sort((a,b) => a-b)[Math.floor(allSupply.length/2)];
+
+            const layout = {
+                plot_bgcolor: 'rgba(15, 23, 42, 0.4)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l: 60, r: 40, t: 30, b: 50 },
+                xaxis: {
+                    title: { text: '기업 공고 수요 (건)', font: { color: '#94a3b8', size: 11 } },
+                    gridcolor: '#1e293b',
+                    tickfont: { color: '#64748b' }
+                },
+                yaxis: {
+                    title: { text: '구직자 공급량 (카페/검색, 건)', font: { color: '#94a3b8', size: 11 } },
+                    gridcolor: '#1e293b',
+                    tickfont: { color: '#64748b' }
+                },
+                legend: {
+                    orientation: 'h',
+                    y: 1.15,
+                    x: 0.5,
+                    xanchor: 'center',
+                    font: { color: '#cbd5e1', size: 10 }
+                },
+                shapes: [
+                    {
+                        type: 'line',
+                        xref: 'paper',
+                        x0: 0,
+                        x1: 1,
+                        y0: medianSupply,
+                        y1: medianSupply,
+                        line: { color: '#475569', width: 1, dash: 'dash' }
+                    },
+                    {
+                        type: 'line',
+                        yref: 'paper',
+                        y0: 0,
+                        y1: 1,
+                        x0: medianDemand,
+                        x1: medianDemand,
+                        line: { color: '#475569', width: 1, dash: 'dash' }
+                    }
+                ],
+                annotations: [
+                    { x: 2, y: medianSupply * 1.8, text: '<b>2사분면: 과공급 위험</b><br>스펙 낭비 구역', showarrow: false, font: { color: '#f59e0b', size: 10 } },
+                    { x: 100, y: medianSupply * 0.2, text: '<b>4사분면: 블루오션</b><br>채용난 구역', showarrow: false, font: { color: '#f43f5e', size: 10 } }
+                ]
+            };
+
+            Plotly.newPlot('scatter-chart', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+        function renderNetworkChart() {
+            const data = jobData[currentJob];
+            const cooc = data.cooccurrence || [];
+            
+            if (cooc.length === 0) {
+                document.getElementById('network-chart').innerHTML = `<div class="h-full flex items-center justify-center text-xs text-slate-500 italic">데이터가 존재하지 않습니다.</div>`;
+                return;
+            }
+
+            const nodes = [...new Set(cooc.flat())];
+            const nodeIdx = {};
+            nodes.forEach((n, idx) => nodeIdx[n] = idx);
+
+            const nNodes = nodes.length;
+            const nodeX = [];
+            const nodeY = [];
+            for (let i = 0; i < nNodes; i++) {
+                const angle = (2 * Math.PI * i) / nNodes;
+                nodeX.push(Math.cos(angle));
+                nodeY.push(Math.sin(angle));
+            }
+
+            const edgeTraces = {
+                x: [],
+                y: [],
+                mode: 'lines',
+                line: { color: '#334155', width: 1.5 },
+                hoverinfo: 'none',
+                showlegend: false
+            };
+
+            cooc.forEach(pair => {
+                const idxA = nodeIdx[pair[0]];
+                const idxB = nodeIdx[pair[1]];
+                edgeTraces.x.push(nodeX[idxA], nodeX[idxB], null);
+                edgeTraces.y.push(nodeY[idxA], nodeY[idxB], null);
+            });
+
+            const nodeTrace = {
+                x: nodeX,
+                y: nodeY,
+                mode: 'markers+text',
+                text: nodes,
+                textposition: 'top center',
+                textfont: { size: 10, color: '#e2e8f0' },
+                marker: {
+                    size: 16,
+                    color: colorMap[currentJob],
+                    line: { color: '#0b0f19', width: 2 }
+                },
+                hovertemplate: '스킬: %{text}<extra></extra>',
+                showlegend: false
+            };
+
+            const layout = {
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l: 20, r: 20, t: 30, b: 20 },
+                xaxis: { showgrid: false, zeroline: false, showticklabels: false },
+                yaxis: { showgrid: false, zeroline: false, showticklabels: false }
+            };
+
+            Plotly.newPlot('network-chart', [edgeTraces, nodeTrace], layout, { responsive: true, displayModeBar: false });
+        }
+
+        function buildVolatilityFilters() {
+            const data = jobData[currentJob];
+            volSkillsCheckboxes.innerHTML = '';
+            
+            data.skills.forEach(skill => {
+                const isChecked = selectedVolatilitySkills.includes(skill);
+                const chip = document.createElement('button');
+                chip.className = `px-2.5 py-1 rounded-full border transition-all ${
+                    isChecked 
+                    ? 'bg-indigo-600/30 border-indigo-500/50 text-indigo-300' 
+                    : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:text-slate-200'
+                }`;
+                chip.textContent = skill;
+                chip.onclick = () => toggleVolatilitySkill(skill);
+                volSkillsCheckboxes.appendChild(chip);
+            });
+        }
+
+        function toggleVolatilitySkill(skill) {
+            if (selectedVolatilitySkills.includes(skill)) {
+                if (selectedVolatilitySkills.length > 1) {
+                    selectedVolatilitySkills = selectedVolatilitySkills.filter(s => s !== skill);
+                }
+            } else {
+                selectedVolatilitySkills.push(skill);
+            }
+            buildVolatilityFilters();
+            renderVolatilityChart();
+        }
+
+        function renderVolatilityChart() {
+            const data = jobData[currentJob];
+            const months = Object.keys(data.monthly);
+            const traces = [];
+
+            const monthAvgs = months.map(m => {
+                const total = data.monthly[m].reduce((sum, val) => sum + val, 0);
+                return total / data.monthly[m].length;
+            });
+
+            traces.push({
+                x: months,
+                y: monthAvgs,
+                mode: 'lines',
+                name: '전체 평균 (기준선)',
+                line: { color: '#475569', width: 2, dash: 'dot' },
+                hovertemplate: '연월: %{x}<br>평균: %{y:.1f}%<extra></extra>'
+            });
+
+            let maxAvgVal = -1;
+            let peakMonth = months[0];
+            monthAvgs.forEach((avg, idx) => {
+                if (avg > maxAvgVal) {
+                    maxAvgVal = avg;
+                    peakMonth = months[idx];
+                }
+            });
+
+            selectedVolatilitySkills.forEach((skill, skillIdx) => {
+                const idx = data.skills.indexOf(skill);
+                if (idx !== -1) {
+                    const ratios = months.map(m => data.monthly[m][idx]);
+                    traces.push({
+                        x: months,
+                        y: ratios,
+                        mode: 'lines+markers',
+                        name: skill,
+                        line: { width: 3 },
+                        marker: { size: 7 },
+                        hovertemplate: `스킬: ${skill}<br>연월: %{x}<br>검색비율: %{y:.1f}%<extra></extra>`
+                    });
+                }
+            });
+
+            let maxYAtPeak = 0;
+            selectedVolatilitySkills.forEach(skill => {
+                const idx = data.skills.indexOf(skill);
+                if (idx !== -1) {
+                    months.forEach(m => {
+                        if (m === peakMonth) maxYAtPeak = Math.max(maxYAtPeak, data.monthly[m][idx]);
+                    });
+                }
+            });
+
+            traces.push({
+                x: [peakMonth, peakMonth],
+                y: [0, maxYAtPeak + 8],
+                mode: 'lines+text',
+                name: `🔥 피크 (${peakMonth})`,
+                line: { color: '#f97316', width: 1.5, dash: 'dash' },
+                text: ['', `🔥 피크 (${peakMonth})`],
+                textposition: 'top center',
+                textfont: { color: '#f97316', size: 10 },
+                hovertemplate: `피크 시점: ${peakMonth}<extra></extra>`,
+                showlegend: true
+            });
+
+            const layout = {
+                plot_bgcolor: 'rgba(15, 23, 42, 0.4)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l: 40, r: 40, t: 20, b: 40 },
+                xaxis: { gridcolor: '#1e293b', tickfont: { color: '#64748b' } },
+                yaxis: { gridcolor: '#1e293b', tickfont: { color: '#64748b' } },
+                legend: {
+                    orientation: 'h',
+                    y: 1.25,
+                    x: 0.5,
+                    xanchor: 'center',
+                    font: { color: '#cbd5e1', size: 10 }
+                }
+            };
+
+            Plotly.newPlot('volatility-chart', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+
+        // =====================================================================
+        // TAB 2: 구직자 DIAGNOSIS ENGINE (Multi-dimensional checkboxes)
+        // =====================================================================
+
+        function buildDiagnosisCheckboxes() {
+            const data = jobData[currentJob];
+            
+            // Build segment checklists
+            buildCheckboxGroup(licenseCheckboxGroup, data.licenses);
+            buildCheckboxGroup(toolCheckboxGroup, data.tools);
+            buildCheckboxGroup(experienceCheckboxGroup, data.experiences);
+        }
+
+        function buildCheckboxGroup(container, list) {
+            container.innerHTML = '';
+            if (!list || list.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-600 italic">없음</span>`;
+                return;
+            }
+
+            list.forEach(skill => {
+                const wrapper = document.createElement('label');
+                wrapper.className = "flex items-center gap-2 p-2.5 bg-slate-950 border border-slate-900 rounded-xl cursor-pointer hover:border-slate-800 transition-all select-none";
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = "h-4 w-4 rounded border-slate-800 text-indigo-600 focus:ring-indigo-500 bg-slate-900 cursor-pointer";
+                checkbox.value = skill;
+                checkbox.checked = selectedDiagnosisSkills.includes(skill);
+                checkbox.onchange = (e) => {
+                    if (e.target.checked) {
+                        selectedDiagnosisSkills.push(skill);
+                    } else {
+                        selectedDiagnosisSkills = selectedDiagnosisSkills.filter(s => s !== skill);
+                    }
+                };
+
+                const labelText = document.createElement('span');
+                labelText.className = "text-xs font-semibold text-slate-300";
+                labelText.textContent = skill;
+
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(labelText);
+                container.appendChild(wrapper);
+            });
+        }
+
+        function clearDiagnosis() {
+            selectedDiagnosisSkills = [];
+            document.querySelectorAll('#license-checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#tool-checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#experience-checkbox-group input[type="checkbox"]').forEach(cb => cb.checked = false);
+            
+            diagnoseScoreValue.textContent = `0.0점`;
+            selectedSkillsCount.textContent = `0개`;
+            renderDiagnosisScoreGauge(0);
+            advicePriorityList.innerHTML = `<p class="text-xs text-slate-500 italic">진단 실행 후 활성화됩니다.</p>`;
+        }
+
+        function runDiagnosisScore() {
+            const data = jobData[currentJob];
+            
+            const userCareerVal = parseInt(userCareer.value);
+            const userEduVal = parseInt(userEdu.value);
+
+            // Compute Career & Edu score (similar to Python logic)
+            // Mock required career/edu for the job
+            const careerScore = userCareerVal >= 2 ? 100 : 50;
+            const eduScore = userEduVal >= 2 ? 100 : 60;
+
+            // License Match Score
+            const neededLicenses = data.licenses;
+            const userLicenses = selectedDiagnosisSkills.filter(s => neededLicenses.includes(s));
+            const licenseScore = neededLicenses.length > 0 ? (userLicenses.length / neededLicenses.length) * 100 : 100;
+
+            // Tool Match Score
+            const neededTools = data.tools;
+            const userTools = selectedDiagnosisSkills.filter(s => neededTools.includes(s));
+            const toolScore = neededTools.length > 0 ? (userTools.length / neededTools.length) * 100 : 100;
+
+            // Experience Match Score
+            const neededExperiences = data.experiences;
+            const userExperiences = selectedDiagnosisSkills.filter(s => neededExperiences.includes(s));
+            const expScore = neededExperiences.length > 0 ? (userExperiences.length / neededExperiences.length) * 100 : 100;
+
+            // Final multi-dimensional score (20% each)
+            const finalScore = careerScore * 0.2 + eduScore * 0.2 + licenseScore * 0.2 + toolScore * 0.2 + expScore * 0.2;
+
+            // Update UI elements
+            diagnoseScoreValue.textContent = `${finalScore.toFixed(1)}점`;
+            selectedSkillsCount.textContent = `${selectedDiagnosisSkills.length}개`;
+
+            renderDiagnosisScoreGauge(finalScore);
+            buildAdviceList(data);
+        }
+
+        function renderDiagnosisScoreGauge(score = 0) {
+            const data = [{
+                domain: { x: [0, 1], y: [0, 1] },
+                value: score,
+                type: "indicator",
+                mode: "gauge",
+                gauge: {
+                    axis: { range: [0, 100], tickwidth: 1, tickcolor: "#334155" },
+                    bar: { color: "#818cf8", thickness: 0.25 },
+                    bgcolor: "rgba(15, 23, 42, 0.4)",
+                    borderwidth: 1,
+                    bordercolor: "#1e293b",
+                }
+            }];
+
+            const layout = {
+                width: 160,
+                height: 160,
+                margin: { t: 0, b: 0, l: 0, r: 0 },
+                paper_bgcolor: 'rgba(0,0,0,0)'
+            };
+
+            Plotly.newPlot('diagnose-radial-chart', data, layout, { responsive: true, displayModeBar: false });
+        }
+
+        function buildAdviceList(data) {
+            advicePriorityList.innerHTML = '';
+            
+            const missing = [];
+            data.skills.forEach((skill, idx) => {
+                if (!selectedDiagnosisSkills.includes(skill)) {
+                    missing.push({
+                        name: skill,
+                        demand: data.demand[idx],
+                        gap: data.demand[idx] - data.supply[idx]
+                    });
+                }
+            });
+
+            missing.sort((a, b) => b.demand - a.demand);
+
+            if (missing.length === 0) {
+                advicePriorityList.innerHTML = `
+                    <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs">
+                        🎉 축하합니다! 해당 직무의 모든 핵심 스펙/역량을 완비하셨습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            missing.slice(0, 3).forEach((item, index) => {
+                const card = document.createElement('div');
+                const riskColor = Math.abs(item.gap) < 5000 ? 'text-rose-400 bg-rose-500/10 border-rose-500/25' : 'text-amber-400 bg-amber-500/10 border-amber-500/25';
+                const riskLabel = Math.abs(item.gap) < 5000 ? '🔥 채용난' : '⚠️ 과공급';
+                
+                card.className = `p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all ${riskColor}`;
+                card.innerHTML = `
+                    <div class="space-y-0.5">
+                        <span class="text-[10px] font-bold uppercase tracking-wider block opacity-75">${index + 1}순위 추천 보완</span>
+                        <strong class="text-xs text-white block">${item.name}</strong>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-950/60">${riskLabel}</span>
+                        <span class="text-[10px] font-semibold">수요 ${item.demand}건</span>
+                    </div>
+                `;
+                advicePriorityList.appendChild(card);
+            });
+        }
+
+
+        // =====================================================================
+        // TAB 3: HR SUITS & JD OPTIMIZATION
+        // =====================================================================
+
+        function renderGapChart() {
+            const data = jobData[currentJob];
+            
+            const supplyTrace = {
+                x: data.skills,
+                y: data.supply,
+                name: '구직자 관심도 (공급)',
+                type: 'bar',
+                marker: { color: '#818cf8', opacity: 0.8 },
+                yaxis: 'y'
+            };
+
+            const demandTrace = {
+                x: data.skills,
+                y: data.demand,
+                name: '기업 우대 빈도 (수요)',
+                type: 'bar',
+                marker: { color: '#f43f5e', opacity: 0.8 },
+                yaxis: 'y2'
+            };
+
+            const traces = [supplyTrace, demandTrace];
+
+            const layout = {
+                plot_bgcolor: 'rgba(15, 23, 42, 0.4)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { l: 50, r: 55, t: 20, b: 40 },
+                barmode: 'group',
+                xaxis: {
+                    gridcolor: '#1e293b',
+                    tickfont: { color: '#94a3b8', size: 10 }
+                },
+                yaxis: {
+                    title: { text: '구직자 공급량 (건)', font: { color: '#818cf8', size: 11 } },
+                    gridcolor: '#1e293b',
+                    tickfont: { color: '#818cf8' }
+                },
+                yaxis2: {
+                    title: { text: '기업 우대 건수 (건)', font: { color: '#f43f5e', size: 11 } },
+                    tickfont: { color: '#f43f5e' },
+                    overlaying: 'y',
+                    side: 'right'
+                },
+                legend: {
+                    orientation: 'h',
+                    y: 1.15,
+                    x: 0.5,
+                    xanchor: 'center',
+                    font: { color: '#cbd5e1', size: 10 }
+                }
+            };
+
+            Plotly.newPlot('gap-chart', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+        function buildMismatchClassificationCards() {
+            const data = jobData[currentJob];
+            oversupplyList.innerHTML = '';
+            shortageList.innerHTML = '';
+
+            const oversupplyKws = [];
+            const shortageKws = [];
+
+            data.skills.forEach((skill, idx) => {
+                const gap = data.demand[idx] - data.supply[idx];
+                const demand = data.demand[idx];
+                const supply = data.supply[idx];
+
+                if (gap < -8000) {
+                    oversupplyKws.push({ name: skill, gap, demand, supply });
+                } else if (demand >= 20 && gap > -5000) {
+                    shortageKws.push({ name: skill, gap, demand, supply });
+                }
+            });
+
+            // Populate oversupply card
+            if (oversupplyKws.length > 0) {
+                oversupplyKws.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-slate-950/40 p-2 rounded-lg text-xs";
+                    row.innerHTML = `
+                        <span class="text-white font-semibold">${item.name}</span>
+                        <span class="text-amber-400 font-medium">공급 ${item.supply.toLocaleString()}건 vs 수요 ${item.demand}건</span>
+                    `;
+                    oversupplyList.appendChild(row);
+                });
+            } else {
+                oversupplyList.innerHTML = `<span class="text-xs text-slate-500 italic">감지된 과밀 키워드 없음</span>`;
+            }
+
+            // Populate shortage card
+            if (shortageKws.length > 0) {
+                shortageKws.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-slate-950/40 p-2 rounded-lg text-xs";
+                    row.innerHTML = `
+                        <span class="text-white font-semibold">${item.name}</span>
+                        <span class="text-rose-400 font-medium">수요 ${item.demand}건 vs 공급 ${item.supply.toLocaleString()}건</span>
+                    `;
+                    shortageList.appendChild(row);
+                });
+            } else {
+                shortageList.innerHTML = `<span class="text-xs text-slate-500 italic">감지된 인재 부족 키워드 없음</span>`;
+            }
+        }
+
+        function buildJdCheckboxes() {
+            const data = jobData[currentJob];
+            jdSimulatorSkills.innerHTML = '';
+
+            data.skills.forEach(skill => {
+                const wrapper = document.createElement('label');
+                wrapper.className = "flex items-center gap-2 p-2 bg-slate-950 border border-slate-900 rounded-lg cursor-pointer hover:border-slate-800 transition-all select-none";
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = "h-3.5 w-3.5 rounded border-slate-800 text-indigo-600 focus:ring-indigo-500 bg-slate-900 cursor-pointer";
+                checkbox.value = skill;
+
+                const labelText = document.createElement('span');
+                labelText.className = "text-[11px] font-semibold text-slate-400";
+                labelText.textContent = skill;
+
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(labelText);
+                jdSimulatorSkills.appendChild(wrapper);
+            });
+        }
+
+        function runJdSimulation() {
+            const data = jobData[currentJob];
+            const checkedBoxes = document.querySelectorAll('#jd-simulator-skills input[type="checkbox"]:checked');
+            
+            const jdTitle = jdTitleInput.value || `${currentJob} 실무자`;
+            const jdExp = jdExpSelect.value;
+            const jdToneVal = document.querySelector('input[name="jd_tone"]:checked').value;
+
+            jdSimOutputContainer.classList.remove('hidden');
+
+            const selectedSkills = Array.from(checkedBoxes).map(cb => cb.value);
+            const skillsStr = selectedSkills.length > 0 ? selectedSkills.join(', ') : "직무 필수 역량";
+
+            const toneOpeningMap = {
+                startup: "저희와 함께 로켓 성장을 이뤄낼 든든한 동료를 찾습니다! 🚀",
+                corporate: "당사 사업 경쟁력 강화를 위한 우수 전문 인재를 아래와 같이 영입하고자 합니다.",
+                tech: "데이터 지표 설계 및 의사결정을 리드해 주실 데이터 중심 인재를 모십니다. 📊"
+            };
+
+            const draftText = `
+### [${jdTitle}] 채용 공고
+
+**[환영 메시지]**
+${toneOpeningMap[jdToneVal]}
+
+**[주요 업무]**
+- ${currentJob} 관련 비즈니스 전략 수립 및 핵심 KPI 관리
+- 유관 부서와의 긴밀한 커뮤니케이션 및 협업 리드
+
+**[지원 요건]**
+- 경력 수준: ${jdExp}
+- 학력 수준: 학사 학위 이상 보유자
+
+**[우대 사항]**
+- **${skillsStr}** 역량 보유자 또는 관련 실무 경험자 극진 우대
+- 시장의 흐름을 읽고 스스로 문제를 해결해 나갈 수 있는 인재
+            `;
+            jdSimDraft.textContent = draftText;
+
+            // Generate simulator feedbacks
+            jdSimFeedback.innerHTML = '';
+            if (selectedSkills.length === 0) {
+                jdSimFeedback.innerHTML = `<p class="text-slate-500 italic">선택된 강조 역량이 없습니다.</p>`;
+                return;
+            }
+
+            selectedSkills.forEach(sk => {
+                const idx = data.skills.indexOf(sk);
+                if (idx !== -1) {
+                    const gap = data.demand[idx] - data.supply[idx];
+                    const row = document.createElement('div');
+                    if (gap < -10000) {
+                        row.innerHTML = `⚠️ **${sk}**: 현재 구직자 공급 과밀 영역입니다. 우대 사항의 장벽으로 작용할 수 있으니 우대 가치를 낮추는 것을 추천합니다.`;
+                    } else if (gap > -5000) {
+                        row.innerHTML = `🟢 **${sk}**: 블루오션(채용난) 역량입니다! 우대 조건으로 최상단에 배치하면 인재 유치 경쟁력을 대폭 향상시킬 수 있습니다.`;
+                    } else {
+                        row.innerHTML = `⚪ **${sk}**: 적정 수준의 수급 상태 키워드입니다. 일반 우대사항으로 유효합니다.`;
+                    }
+                    jdSimFeedback.appendChild(row);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
